@@ -10,5 +10,4 @@ router.post('/set-advisor-credentials', authenticate, isAdminDepartment, setAdvi
 router.get('/advisor-credentials', authenticate, isAdminDepartment, getAdvisorLoginCredentials);
 router.put('/update-login-credentials', authenticate, isAdminDepartment, updateLoginCredentials);
 
-
 export default router;

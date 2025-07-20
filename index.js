@@ -12,6 +12,8 @@ import cityRoutes from "./routes/city.route.js";
 import bankRoutes from "./routes/bank.route.js";
 import bankerRoutes from "./routes/banker.route.js";
 import processedByRoutes from "./routes/processedBy.route.js";
+import payoutRoutes from "./routes/payout.route.js";
+import sliderRoutes from "./routes/slider.route.js";
 
 dotenv.config();
 
@@ -33,6 +35,8 @@ app.use('/api/v1/cities', cityRoutes);
 app.use('/api/v1/banks', bankRoutes);
 app.use('/api/v1/bankers', bankerRoutes);
 app.use('/api/v1/processedBy', processedByRoutes);
+app.use('/api/v1/payouts', payoutRoutes);
+app.use('/api/v1/sliders', sliderRoutes);
 // app.use('/api/v1/license', licenseRoutes);
 
 app.get("/", (req, res) => {

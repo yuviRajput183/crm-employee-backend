@@ -53,6 +53,7 @@ class AuthService {
       return {
         data: {
           ...payload,
+          profile,
         },
         message: "User logged in successfully",
       };
