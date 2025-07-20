@@ -15,7 +15,6 @@ class AdvisorService {
       name,
       email,
       mobile,
-      photoUrl,
       companyName,
       address,
       altContact,
@@ -78,6 +77,11 @@ class AdvisorService {
     if (latestAdvisor && latestAdvisor.advisorCode) {
       const num = parseInt(latestAdvisor.advisorCode.replace("DSA", ""));
       advisorCode = "DSA" + (num + 1).toString().padStart(3, "0");
+    }
+
+    let photoUrl = "";
+    if (req.file) {
+      photoUrl = req.file.filename;
     }
 
     const newAdvisor = new Advisor({
@@ -259,7 +263,6 @@ class AdvisorService {
       name,
       mobile,
       email,
-      photoUrl,
       companyName,
       address,
       altContact,
@@ -290,6 +293,11 @@ class AdvisorService {
       if (existingName && existingName._id.toString() !== advisorId) {
         return next(ErrorResponse.badRequest("Advisor name already exists"));
       }
+    }
+
+    let photoUrl = "";
+    if (req.file) {
+      photoUrl = req.file.filename; // Access multer uploaded file
     }
 
     advisor.name = name || advisor.name;

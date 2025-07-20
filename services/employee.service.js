@@ -142,7 +142,6 @@ class EmployeeService {
       dateOfJoining,
       address,
       altContact,
-      photoUrl,
     } = req.body;
 
     const creator = await Employee.findById(req.user.referenceId);
@@ -207,6 +206,11 @@ class EmployeeService {
       );
     }
     const assignedReportingOfficer = reportingOfficer || creator._id;
+
+    let photoUrl = "";
+    if (req.file) {
+      photoUrl = req.file.filename;
+    }
 
     const newEmployee = new Employee({
       name,
@@ -399,7 +403,6 @@ class EmployeeService {
       mobile,
       address,
       altContact,
-      photoUrl,
       department,
       designation,
       reportingOfficer,
@@ -454,6 +457,11 @@ class EmployeeService {
         return next(ErrorResponse.notFound("Reporting officer not found"));
       }
       employeeToUpdate.reportingOfficer = reportingOfficer;
+    }
+
+    let photoUrl = "";
+    if (req.file) {
+      photoUrl = req.file.filename; // Access multer uploaded file
     }
 
     // Update fields

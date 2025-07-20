@@ -12,14 +12,15 @@ import {
     authenticate, 
     isAdminDepartment 
 } from "../middlewares/verifyayth.middleware.js";
+import { uploadImage } from "../middlewares/imageUpload.js";
 
 const router = express.Router();
 
 router.post("/create-superadmin", createGroupSuperAdmin);
-router.post("/add-employee", authenticate, isAdminDepartment, createEmployee);
+router.post("/add-employee", authenticate, isAdminDepartment, uploadImage, createEmployee);
 router.get("/list-employees", authenticate, isAdminDepartment, fetchAllEmployees);
 router.get("/employee-detail/:employeeId", authenticate, isAdminDepartment, fetchSingleEmployee);
-router.put("/edit-employee/:employeeId", authenticate, isAdminDepartment, editEmployee)
+router.put("/edit-employee/:employeeId", authenticate, isAdminDepartment, uploadImage, editEmployee)
 router.get("/no-credentials", authenticate, isAdminDepartment, getEmployeesWithoutCredentials);
 router.get("/reporting-officer", authenticate, isAdminDepartment, getReportingOfficer);
 
