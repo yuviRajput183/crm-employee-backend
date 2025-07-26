@@ -6,6 +6,7 @@ import {
     fetchAllEmployees, 
     fetchSingleEmployee,
     getEmployeesWithoutCredentials,
+    getNonAdminEmployees,
     getReportingOfficer
 } from "../controller/employee.controller.js";
 import { 
@@ -23,5 +24,6 @@ router.get("/employee-detail/:employeeId", authenticate, isAdminDepartment, fetc
 router.put("/edit-employee/:employeeId", authenticate, isAdminDepartment, uploadImage, editEmployee)
 router.get("/no-credentials", authenticate, isAdminDepartment, getEmployeesWithoutCredentials);
 router.get("/reporting-officer", authenticate, isAdminDepartment, getReportingOfficer);
+router.get("/non-admin-department", authenticate, isAdminDepartment, getNonAdminEmployees);
 
 export default router;

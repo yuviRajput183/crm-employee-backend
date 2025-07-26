@@ -3,7 +3,7 @@ import Department from "../models/Department.model.js";
 import Employee from "../models/Employee.model.js";
 // import License from "../models/License.model.js";
 import User from "../models/User.model.js";
-import cloudinary from "cloudinary";
+// import cloudinary from "cloudinary";
 
 class EmployeeService {
   /**
@@ -271,9 +271,9 @@ class EmployeeService {
     if (currentEmployee.isOwner) {
       // E1 can see all employees in their group
       employees = await Employee.find({ groupId: currentEmployee.groupId })
-        .select("_id name email mobile designation isActive department")
-        .populate("department", "name")
-        .populate("reportingOfficer", "name")
+        .select("_id name email mobile designation isActive department dateOfJoining dateOfResign")
+        .populate("department", "_id name")
+        .populate("reportingOfficer", "_id name")
         .sort({ name: 1 })
         .skip(skip)
         .limit(parsedLimit)
@@ -285,8 +285,8 @@ class EmployeeService {
     } else {
       // Other admins see only employees created by them
       employees = await Employee.find({ createdBy: currentUserId })
-        .select("_id name email mobile designation isActive department")
-        .populate("department", "name")
+        .select("_id name email mobile designation isActive department dateOfJoining dateOfResign")
+        .populate("department", "_id name")
         .sort({ name: 1 })
         .skip(skip)
         .limit(parsedLimit)
@@ -561,6 +561,47 @@ class EmployeeService {
       data: reportingOfficers,
       message: "Reporting officers fetched successfully",
     };
+  }
+
+  /**
+   * getNonAdminEmployees - Fetch all employees name which are not belongs to admin department.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getNonAdminEmployees(req, res, next) {
+    const currentEmployee = await Employee.findById(req.user.referenceId);
+
+    if(!currentEmployee) {
+      return next(ErrorResponse.notFound("Employee not found"));
+    }
+
+    let employees = [];
+
+    if(currentEmployee.role.toLowerCase() === "admin" && currentEmployee.isOwner) {
+      // Super Admin - see all non-admin employees in their group
+      employees = await Employee.find({
+        role: "employee",
+        groupId: currentEmployee.groupId,
+      })
+        .select("_id name")
+        .lean();
+    } else if (currentEmployee.role.toLowerCase() === "admin" && !currentEmployee.isOwner) {
+      // Admin - see only employees created by this admin
+      employees = await Employee.find({
+        role: "employee",
+        createdBy: currentEmployee._id,
+      })
+        .select("_id name")
+        .lean();
+    } else {
+      return next(ErrorResponse.unauthorized("Access denied"));
+    }
+
+    return {
+      data: employees,
+      message: "Employees fetched successfully",
+    }
   }
 }
 

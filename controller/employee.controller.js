@@ -65,7 +65,7 @@ export const fetchAllEmployees = async (req, res, next) => {
 
     if (isNaN(parsedLimit) || parsedLimit <= 0)
       return next(ErrorResponse.badRequest("Limit must be greater than 0."));
-    
+
     const data = await employeeService.fetchAllEmployees(req, res, next);
     if (data) return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
@@ -124,7 +124,11 @@ export const editEmployee = async (req, res, next) => {
  */
 export const getEmployeesWithoutCredentials = async (req, res, next) => {
   try {
-    const data = await employeeService.getEmployeesWithoutCredentials(req, res, next);
+    const data = await employeeService.getEmployeesWithoutCredentials(
+      req,
+      res,
+      next
+    );
     if (data) return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
     return next(ErrorResponse.internalServer(error.message));
@@ -146,3 +150,17 @@ export const getReportingOfficer = async (req, res, next) => {
   }
 };
 
+/**
+ * getNonAdminEmployees - Fetch all employees name which are not belongs to admin department.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.  
+ */
+export const getNonAdminEmployees = async (req, res, next) => {
+  try {
+    const data = await employeeService.getNonAdminEmployees(req, res, next);
+    if (data) return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
