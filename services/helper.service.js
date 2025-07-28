@@ -1,3 +1,4 @@
+import Counter from "../models/Counter.model.js";
 
 class helperService {
   /**
@@ -10,6 +11,16 @@ class helperService {
     const missingFields = requiredFields.filter((field) => !(field in body));
     return missingFields;
   };
+
+  async getNextSequence(name) {
+    const counter = await Counter.findOneAndUpdate(
+      { name },
+      { $inc: { seq: 1 }},
+      { new: true, upsert: true }
+    );
+
+    return counter.seq;
+  }
 }
 
 export default new helperService();

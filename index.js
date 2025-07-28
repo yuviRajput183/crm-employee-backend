@@ -14,6 +14,7 @@ import bankerRoutes from "./routes/banker.route.js";
 import processedByRoutes from "./routes/processedBy.route.js";
 import payoutRoutes from "./routes/payout.route.js";
 import sliderRoutes from "./routes/slider.route.js";
+import leadRoutes from "./routes/lead.route.js";
 
 dotenv.config();
 
@@ -24,7 +25,10 @@ connectDB(DATABASE_URL);
 
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use('/uploads', express.static('uploads'));
 
 app.use('/api/v1/auth', authRoutes);
@@ -38,6 +42,7 @@ app.use('/api/v1/bankers', bankerRoutes);
 app.use('/api/v1/processedBy', processedByRoutes);
 app.use('/api/v1/payouts', payoutRoutes);
 app.use('/api/v1/sliders', sliderRoutes);
+app.use('/api/v1/leads', leadRoutes);
 // app.use('/api/v1/license', licenseRoutes);
 
 app.get("/", (req, res) => {

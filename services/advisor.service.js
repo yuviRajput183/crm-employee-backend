@@ -1,6 +1,8 @@
+import ErrorResponse from "../lib/error.res.js";
 import Advisor from "../models/Advisor.model.js";
 import Bank from "../models/Bank.model.js";
 import City from "../models/City.model.js";
+import Department from "../models/Department.model.js";
 import Employee from "../models/Employee.model.js";
 
 class AdvisorService {
@@ -363,6 +365,58 @@ class AdvisorService {
       data: advisors,
       message: "Advisors without credentials fetched successfully",
     };
+  }
+
+  /**
+   * getAdvisorsForDropdown - Fetch all advisors for the dropdown on the basis of the logged in user.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function.
+   */
+  async getAdvisorsForDropdown(req, res, next) {
+    const user = await Employee.findById(req.user.referenceId);
+    if (!user) return next(ErrorResponse.notFound("User not found"));
+
+    let advisors = [];
+
+    if (user.isOwner) {
+      // Super Admin: get all advisors of the group
+      advisors = await Advisor.find({ groupId: user._id }).select("name _id");
+    } else {
+      const department = await Department.findById(user.department).select(
+        "name"
+      );
+      if (!department)
+        return next(ErrorResponse.notFound("Department not found"));
+
+      const isAdmin = department.name.toLowerCase().includes("admin");
+
+      if (isAdmin) {
+        // Admin: get advisors created by him
+        advisors = await Advisor.find({ createdBy: user._id }).select(
+          "name _id"
+        );
+      } else {
+        // Normal Employee: find the admin who created him
+        const reportingOfficer = await Employee.findById(user.reportingOfficer);
+        if (!reportingOfficer) return next(ErrorResponse.notFound("Reporting Officer not found"));
+
+        advisors = await Advisor.find({ createdBy: reportingOfficer._id }).select("name _id");
+      }
+    }
+
+    if(advisors.length === 0) {
+      return {
+        data: [],
+        message: "No advisors found",
+      }
+    };
+
+    return {
+      data: advisors,
+      message: "Advisors fetched successfully",
+    };
+    
   }
 }
 

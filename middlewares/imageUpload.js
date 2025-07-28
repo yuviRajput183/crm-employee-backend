@@ -12,5 +12,5 @@ const imageStorage = multer.diskStorage({
 
 export const uploadImage = multer({
   storage: imageStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit (optional)
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 }).single('photo');  // should match frontend 'photo' key

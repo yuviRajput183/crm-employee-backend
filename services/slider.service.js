@@ -46,6 +46,8 @@ class SliderService {
             message: "Slider updated successfully",
         }
     }
+
+    // Make a GET request to get all sliders
 }
 
 export default new SliderService();

@@ -117,3 +117,18 @@ export const getAdvisorsWithoutCredentials = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 }
+
+/**
+ * getAdvisorsForDropdown - Fetch all advisors for the dropdown on the basis of the logged in user.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function.
+ */
+export const getAdvisorsForDropdown = async (req, res, next) => {
+  try {
+    const data = await advisorService.getAdvisorsForDropdown(req, res, next);
+    if (data) return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}

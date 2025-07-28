@@ -5,7 +5,6 @@ const employeeSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      // unique: true,
       description: "The name of the employee",
     },
     email: {
@@ -108,6 +107,6 @@ const employeeSchema = new mongoose.Schema(
   }
 );
 
-const Employee = mongoose.models.Employee || mongoose.model("Employee", employeeSchema);
+const Employee =  mongoose.model("Employee", employeeSchema);
 
 export default Employee;
