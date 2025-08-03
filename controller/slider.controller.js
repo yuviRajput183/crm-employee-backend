@@ -20,3 +20,13 @@ export const addOrUpdateSliders = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 };
+
+export const getAllSliders = async (req, res, next) => {
+  try {
+      const data = await sliderService.getAllSliders(req, res, next);
+      if (data && data.data)
+      return SuccessResponse.created(res, data.message, data.data);
+  } catch (error) {
+      return next(ErrorResponse.internalServer(error.message));
+  }
+}

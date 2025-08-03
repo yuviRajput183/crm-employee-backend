@@ -102,7 +102,7 @@ export const editLeadAdvisor = async (req, res, next) => {
  * @param {Object} res - The HTTP response object.
  * @param {Function} next - The next middleware function for error handling.
  */
-export const editNewLead = async (req, res, next) => {
+export const editLead = async (req, res, next) => {
   const requiredFields = [
     "clientName",
     "mobileNo",
@@ -118,7 +118,7 @@ export const editNewLead = async (req, res, next) => {
     return next(ErrorResponse.badRequest(errorMessage));
   }
   try {
-    const data = await leadService.editNewLead(req, res, next);
+    const data = await leadService.editLead(req, res, next);
     if (data && data.data)
       return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
@@ -141,3 +141,36 @@ export const getAllMyLeads = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 };
+
+export const getCustomersByAdvisorId = async (req, res, next) => {
+  const requiredFields = ["advisorId"];
+  const missingFields = helperService.validateFields(requiredFields, req.query);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.getCustomersByAdvisorId(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}
+
+/**
+ * getAllDisbursedLeads - Super admin and admin can fetch all disbursed leads whose finalPayout value is false. We require these leads in advisor payout.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.  
+ */
+export const getDisbursedUnpaidLeads = async (req, res, next) => {
+  try {
+    const data = await leadService.getDisbursedUnpaidLeads(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}

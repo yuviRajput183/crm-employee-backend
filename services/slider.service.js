@@ -1,5 +1,4 @@
 import ErrorResponse from "../lib/error.res.js";
-import Employee from "../models/Employee.model.js";
 import Slider from "../models/Slider.model.js";
 
 class SliderService {
@@ -47,7 +46,24 @@ class SliderService {
         }
     }
 
-    // Make a GET request to get all sliders
+    /**
+     * getAllSliders - Get all sliders images.
+     * @param {Object} req - The HTTP request object.
+     * @param {Object} res - The HTTP response object.
+     * @param {Function} next - The next middleware function for error handling.
+     */
+    async getAllSliders(req, res, next) {
+        const sliders = await Slider.find();
+        
+        if(sliders.length === 0) {
+            return next(ErrorResponse.notFound("Slider not found"));
+        }
+
+        return {
+            data: sliders,
+            message: "Sliders fetched successfully",
+        }
+    }
 }
 
 export default new SliderService();

@@ -97,7 +97,7 @@ class LeadService {
       fromDate,
       toDate,
       page = 1,
-      limit = 10,
+      limit = 1000,
     } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -256,9 +256,9 @@ class LeadService {
    * editLead - Edit a lead.
    * @param {body(productType, loanRequirementAmount, clientName, mobileNo, emailId, dob, panNo, aadharNo, maritalStatus, spouseName, motherName, otherContactNo, qualification, residenceType, residentialAddress, residentialAddressTakenFrom, residentialStability, stateName, cityName, pinCode, companyName, designation, companyAddress, netSalary, salaryTransferMode, jobPeriod, totalJobExperience, officialEmailId, officialNumber, noOfDependent, creditCardOutstandingAmount, runningLoans, references, documents, history, password, allocatedTo)} req - The request body.
    * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.  
+   * @param {Function} next - The next middleware function for error handling.
    */
-  async editNewLead(req, res, next) {
+  async editLead(req, res, next) {
     const leadId = req.params.leadId;
     const updates = { ...req.body };
 
@@ -268,8 +268,10 @@ class LeadService {
     }
 
     // Check mobile no is unique
-    if(updates.mobileNo && updates.mobileNo !== existingLead.mobileNo) {
-      const existingLeadMobile = await Lead.findOne({ mobileNo: updates.mobileNo });
+    if (updates.mobileNo && updates.mobileNo !== existingLead.mobileNo) {
+      const existingLeadMobile = await Lead.findOne({
+        mobileNo: updates.mobileNo,
+      });
       if (existingLeadMobile && existingLeadMobile._id.toString() !== leadId) {
         return next(ErrorResponse.badRequest("Mobile number already exists"));
       }
@@ -297,8 +299,9 @@ class LeadService {
       newHistoryEntry.advisorReply = "";
       shouldAddHistory = true;
     } else if (updates.feedback || updates.remarks) {
-      newHistoryEntry.feedback =
-        updates.feedback ? updates.feedback : existingLead.feedback;
+      newHistoryEntry.feedback = updates.feedback
+        ? updates.feedback
+        : existingLead.feedback;
       newHistoryEntry.commentBy = employee.name;
       newHistoryEntry.commentDate = moment().format("DD/MM/YYYY-hh:mm A");
       newHistoryEntry.remarks = updates.remarks || "";
@@ -356,7 +359,7 @@ class LeadService {
    * getAllMyLeads - Super admin and admin can fetch all my leads and their stats.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.  
+   * @param {Function} next - The next middleware function for error handling.
    */
   async getAllMyLeads(req, res, next) {
     const {
@@ -368,7 +371,7 @@ class LeadService {
       fromDate,
       toDate,
       page = 1,
-      limit = 10
+      limit = 10,
     } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -377,24 +380,24 @@ class LeadService {
 
     const filters = {};
 
-    if(fromDate || toDate) {
+    if (fromDate || toDate) {
       filters.createdAt = {};
       if (fromDate) filters.createdAt.$gte = new Date(fromDate);
       if (toDate) filters.createdAt.$lte = new Date(toDate);
     }
 
-    if(clientName) {
+    if (clientName) {
       filters.clientName = { $regex: clientName, $options: "i" };
     }
 
-    if(productType) {
+    if (productType) {
       filters.productType = {
         $regex: productType,
-        $options: "i"
-      }
+        $options: "i",
+      };
     }
 
-    if(allocatedTo) {
+    if (allocatedTo) {
       filters.allocatedTo = allocatedTo;
     }
 
@@ -407,18 +410,24 @@ class LeadService {
       "Loan Disbursed",
       "Policy Issued",
       "Invoice Raised",
-      "Loan Rejected"
+      "Loan Rejected",
     ];
 
     const filteredLeads = leads.filter((lead) => {
       const lastHistory = lead.history?.[lead.history.length - 1];
-      if(!lastHistory) return false;
+      if (!lastHistory) return false;
 
       const matchFeedback = validFeedbacks.includes(lastHistory.feedback);
 
-      const matchFeedbackQuery = feedback ? lastHistory.feedback.toLowerCase() === feedback.toLowerCase() : true;
+      const matchFeedbackQuery = feedback
+        ? lastHistory.feedback.toLowerCase() === feedback.toLowerCase()
+        : true;
 
-      const matchAdvisorName = advisorName ? lead.advisorId?.name?.toLowerCase().includes(advisorName.toLowerCase()) : true;
+      const matchAdvisorName = advisorName
+        ? lead.advisorId?.name
+            ?.toLowerCase()
+            .includes(advisorName.toLowerCase())
+        : true;
 
       return matchFeedback && matchFeedbackQuery && matchAdvisorName;
     });
@@ -429,23 +438,27 @@ class LeadService {
       "Loan Disbursed": 0,
       "Policy Issued": 0,
       "Invoice Raised": 0,
-      "Loan Rejected": 0
+      "Loan Rejected": 0,
     };
 
     filteredLeads.forEach((lead) => {
       const lastHistory = lead.history?.[lead.history.length - 1];
 
-      if(lastHistory && feedbackStats.hasOwnProperty(lastHistory.feedback)) {
+      if (lastHistory && feedbackStats.hasOwnProperty(lastHistory.feedback)) {
         feedbackStats[lastHistory.feedback]++;
       }
+    });
 
-      const percentageStats = {};
+     const percentageStats = {};
       Object.keys(feedbackStats).forEach((key) => {
         const count = feedbackStats[key];
         percentageStats[key] = {
           count,
-          percentage: totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(2) + "%" : "0%"
-        }
+          percentage:
+            totalLeads > 0
+              ? ((count / totalLeads) * 100).toFixed(2) + "%"
+              : "0%",
+        };
       });
 
       const paginatedLeads = filteredLeads.slice(skip, skip + parsedLimit);
@@ -456,11 +469,56 @@ class LeadService {
           currentPage: parsedPage,
           totalPages: Math.ceil(totalLeads / parsedLimit),
           leads: paginatedLeads,
-          stats: percentageStats
+          stats: percentageStats,
         },
-        message: "My Leads retrieved successfully"
+        message: "My Leads retrieved successfully",
       };
+  }
+
+  async getCustomersByAdvisorId(req, res, next) {
+    const { advisorId } = req.query;
+
+    const customers = await Lead.find({ advisorId })
+      .select("_id clientName")
+      .sort({ clientName: 1 })
+
+    return {
+      data: customers,
+      message: "Customers retrieved successfully",
+    }
+  }
+
+  /**
+   * getDisbursedUnpaidLeads - Get leads for advisor payout. These leads are disbursed but not paid.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getDisbursedUnpaidLeads(req, res, next) {
+    const leads = await Lead.find({
+      finalPayout: false,
+      history: { $exists: true, $ne: [] },
     })
+      .populate("advisorId", "_id name")
+      .populate("allocatedTo", "_id name")
+      .populate("createdBy", "_id name")
+      .sort({ createdAt: -1 });
+
+    const filteredLeads = leads.filter((lead) => {
+      const lastEntry = lead.history[lead.history.length - 1];
+      return lastEntry?.feedback === "Loan Disbursed";
+    });
+
+    // Format response to "leadNo - clientName"
+    const formattedLeads = filteredLeads.map((lead) => ({
+      id: lead._id,
+      displayName: `${lead.leadNo} - ${lead.clientName}`,
+    }));
+
+    return {
+      data: formattedLeads,
+      message: "Disbursed unpaid leads retrieved successfully",
+    };
   }
 }
 

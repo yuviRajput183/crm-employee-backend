@@ -136,6 +136,12 @@ const leadSchema = new mongoose.Schema({
   description: String,
   amount: Number,
 
+  finalPayout: {
+    type: Boolean,
+    default: false,
+    description: "This shows that advisor payout is final or not"
+  },
+
 
   advisorId: {
     type: mongoose.Schema.Types.ObjectId,
