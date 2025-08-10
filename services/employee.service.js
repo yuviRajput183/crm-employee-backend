@@ -254,7 +254,7 @@ class EmployeeService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async fetchAllEmployees(req, res, next) {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 100 } = req.query;
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
     const skip = (parsedPage - 1) * parsedLimit;
@@ -509,7 +509,7 @@ class EmployeeService {
 
     if (currentUser.isOwner) {
       // Super Admin: Fetch all without credentials
-      employees = await Employee.find({ isCredential: false }).select(
+      employees = await Employee.find({ isCredential: false, isActive: true }).select(
         "_id name"
       );
     } else {
@@ -517,6 +517,7 @@ class EmployeeService {
       employees = await Employee.find({
         isCredential: false,
         createdBy: currentUserId,
+        isActive: true
       }).select("_id name");
     }
 
@@ -583,6 +584,7 @@ class EmployeeService {
       employees = await Employee.find({
         role: "employee",
         groupId: currentEmployee.groupId,
+        isActive: true
       })
         .select("_id name")
         .lean();
@@ -591,6 +593,7 @@ class EmployeeService {
       employees = await Employee.find({
         role: "employee",
         createdBy: currentEmployee._id,
+        isActive: true
       })
         .select("_id name")
         .lean();

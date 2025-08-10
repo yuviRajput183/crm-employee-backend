@@ -56,7 +56,7 @@ export const createEmployee = async (req, res, next) => {
  */
 export const fetchAllEmployees = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 100 } = req.query;
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
 

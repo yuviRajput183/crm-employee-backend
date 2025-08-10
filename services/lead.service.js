@@ -371,7 +371,7 @@ class LeadService {
       fromDate,
       toDate,
       page = 1,
-      limit = 10,
+      limit = 100,
     } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -475,6 +475,12 @@ class LeadService {
       };
   }
 
+  /**
+   * getCustomersByAdvisorId - Get all customers name and Id associated with an advisor.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
   async getCustomersByAdvisorId(req, res, next) {
     const { advisorId } = req.query;
 
@@ -488,38 +494,6 @@ class LeadService {
     }
   }
 
-  /**
-   * getDisbursedUnpaidLeads - Get leads for advisor payout. These leads are disbursed but not paid.
-   * @param {Object} req - The HTTP request object.
-   * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.
-   */
-  async getDisbursedUnpaidLeads(req, res, next) {
-    const leads = await Lead.find({
-      finalPayout: false,
-      history: { $exists: true, $ne: [] },
-    })
-      .populate("advisorId", "_id name")
-      .populate("allocatedTo", "_id name")
-      .populate("createdBy", "_id name")
-      .sort({ createdAt: -1 });
-
-    const filteredLeads = leads.filter((lead) => {
-      const lastEntry = lead.history[lead.history.length - 1];
-      return lastEntry?.feedback === "Loan Disbursed";
-    });
-
-    // Format response to "leadNo - clientName"
-    const formattedLeads = filteredLeads.map((lead) => ({
-      id: lead._id,
-      displayName: `${lead.leadNo} - ${lead.clientName}`,
-    }));
-
-    return {
-      data: formattedLeads,
-      message: "Disbursed unpaid leads retrieved successfully",
-    };
-  }
 }
 
 export default new LeadService();

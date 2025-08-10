@@ -1,5 +1,5 @@
 import express from "express";
-import { addLead, editLead, editLeadAdvisor, getAllMyLeads, getAllNewLeads, getCustomersByAdvisorId, getDisbursedUnpaidLeads, getSignleLead } from "../controller/lead.controller.js";
+import { addLead, editLead, editLeadAdvisor, getAllMyLeads, getAllNewLeads, getCustomersByAdvisorId, getSignleLead } from "../controller/lead.controller.js";
 import { uploadDocument } from "../middlewares/documentUpload.js";
 import { authenticate, isAdminDepartment } from "../middlewares/verifyayth.middleware.js";
 
@@ -17,7 +17,7 @@ router.get("/all-my-leads", authenticate, isAdminDepartment, getAllMyLeads);
 router.get("/customers-by-advisorId", authenticate, isAdminDepartment, getCustomersByAdvisorId);
 
 // Leads for advisor payout
-router.get("/disbursed-unpaid-leads", authenticate, isAdminDepartment, getDisbursedUnpaidLeads);
+
 
 
 

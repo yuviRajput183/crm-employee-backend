@@ -1,7 +1,7 @@
-import SuccessResponse from "../lib/success.res.js";
 import ErrorResponse from "../lib/error.res.js";
-import leadService from "../services/lead.service.js";
+import SuccessResponse from "../lib/success.res.js";
 import helperService from "../services/helper.service.js";
+import leadService from "../services/lead.service.js";
 
 /**
  * addLead - Add a new lead. Admin or Super admin send the employeeId in allocatedTo field. If the logged in user is employee, allocatedTo field is set to the id of logged in employee.
@@ -15,6 +15,7 @@ export const addLead = async (req, res, next) => {
     "mobileNo",
     "advisorId",
     "productType",
+    // "loanRequirementAmount"
   ];
   const missingFields = helperService.validateFields(requiredFields, req.body);
 
@@ -142,6 +143,12 @@ export const getAllMyLeads = async (req, res, next) => {
   }
 };
 
+/**
+ * getCustomersByAdvisorId - Get all customers associated with an advisor.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.  
+ */ 
 export const getCustomersByAdvisorId = async (req, res, next) => {
   const requiredFields = ["advisorId"];
   const missingFields = helperService.validateFields(requiredFields, req.query);
@@ -152,22 +159,6 @@ export const getCustomersByAdvisorId = async (req, res, next) => {
   }
   try {
     const data = await leadService.getCustomersByAdvisorId(req, res, next);
-    if (data && data.data)
-      return SuccessResponse.ok(res, data.message, data.data);
-  } catch (error) {
-    return next(ErrorResponse.internalServer(error.message));
-  }
-}
-
-/**
- * getAllDisbursedLeads - Super admin and admin can fetch all disbursed leads whose finalPayout value is false. We require these leads in advisor payout.
- * @param {Object} req - The HTTP request object.
- * @param {Object} res - The HTTP response object.
- * @param {Function} next - The next middleware function for error handling.  
- */
-export const getDisbursedUnpaidLeads = async (req, res, next) => {
-  try {
-    const data = await leadService.getDisbursedUnpaidLeads(req, res, next);
     if (data && data.data)
       return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {

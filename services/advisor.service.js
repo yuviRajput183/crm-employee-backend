@@ -352,12 +352,14 @@ class AdvisorService {
       advisors = await Advisor.find({
         groupId: currentUser.groupId,
         isCredential: false,
+        isActive: true
       }).select("_id name");
     } else {
       // Normal Admin can see only advisors created by them
       advisors = await Advisor.find({
         createdBy: currentUserId,
         isCredential: false,
+        isActive: true
       }).select("_id name");
     }
 
@@ -381,7 +383,7 @@ class AdvisorService {
 
     if (user.isOwner) {
       // Super Admin: get all advisors of the group
-      advisors = await Advisor.find({ groupId: user._id }).select("name _id");
+      advisors = await Advisor.find({ groupId: user._id, isActive: true }).select("name _id");
     } else {
       const department = await Department.findById(user.department).select(
         "name"
@@ -393,7 +395,7 @@ class AdvisorService {
 
       if (isAdmin) {
         // Admin: get advisors created by him
-        advisors = await Advisor.find({ createdBy: user._id }).select(
+        advisors = await Advisor.find({ createdBy: user._id, isActive: true }).select(
           "name _id"
         );
       } else {
@@ -401,7 +403,7 @@ class AdvisorService {
         const reportingOfficer = await Employee.findById(user.reportingOfficer);
         if (!reportingOfficer) return next(ErrorResponse.notFound("Reporting Officer not found"));
 
-        advisors = await Advisor.find({ createdBy: reportingOfficer._id }).select("name _id");
+        advisors = await Advisor.find({ createdBy: reportingOfficer._id, isActive: true }).select("name _id");
       }
     }
 

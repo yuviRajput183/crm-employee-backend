@@ -40,7 +40,10 @@ const leadSchema = new mongoose.Schema({
       "Private Funding", "Services", "Credit Card"
     ]
   },
-  loanRequirementAmount: Number,
+  loanRequirementAmount: {
+    type: Number,
+    // required: true
+  },
   leadNo: {
     type: Number,
     unique: true
@@ -142,6 +145,11 @@ const leadSchema = new mongoose.Schema({
     description: "This shows that advisor payout is final or not"
   },
 
+  finalInvoice: {
+    type: Boolean,
+    default: false,
+    description: "This shows that invoice is final or not"
+  },
 
   advisorId: {
     type: mongoose.Schema.Types.ObjectId,

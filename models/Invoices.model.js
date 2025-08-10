@@ -1,24 +1,24 @@
 import mongoose from "mongoose";
 
-const advisorPayoutSchema = new mongoose.Schema(
+const invoiceSchema = new mongoose.Schema(
   {
     leadId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lead",
       required: true,
     },
-    advisorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Advisor",
-      required: true,
-    },
+    // advisorId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Advisor",
+    //   required: true,
+    // },
     // customerName: String,
     // loanServiceType: String,
 
-    disbursalAmount: {
-      type: Number,
-      required: true,
-    },
+    // disbursalAmount: {
+    //   type: Number,
+    //   required: true,
+    // },
     disbursalDate: Date,
 
     payoutPercent: {
@@ -30,24 +30,26 @@ const advisorPayoutSchema = new mongoose.Schema(
     tdsPercent: Number,
     tdsAmount: Number,
 
-    gstApplicable: {
-      type: Boolean,
-      required: true,
-    },
     gstPercent: Number,
     gstAmount: Number,
 
-    invoiceNo: String,
-    invoiceDate: Date,
+    invoiceNo: {
+      type: String,
+      required: true,
+    },
+    invoiceDate: {
+      type: Date,
+      required: true,
+    },
 
-    netPayableAmount: Number,
+    netReceivableAmount: Number,
 
     processedById: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProcessedBy",
       required: true,
     },
-    finalPayout: {
+    finalInvoice: {
       type: Boolean,
       default: false,
     },
@@ -82,8 +84,8 @@ const advisorPayoutSchema = new mongoose.Schema(
   }
 );
 
-const AdvisorPayout =
-  mongoose.models.AdvisorPayout ||
-  mongoose.model("AdvisorPayout", advisorPayoutSchema);
+const Invoice =
+  mongoose.models.Invoice ||
+  mongoose.model("Invoice", invoiceSchema);
 
-export default AdvisorPayout;
+export default Invoice;
