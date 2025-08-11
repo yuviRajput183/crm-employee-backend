@@ -115,7 +115,7 @@ class AdvisorPayoutService {
 
     await newPayout.save();
 
-    await Lead.findByIdAndUpdate({id: leadId}, { finalPayout}, { new: true})
+    await Lead.findByIdAndUpdate(leadId, { finalPayout}, { new: true})
 
     return {
         data: newPayout,
@@ -130,7 +130,7 @@ class AdvisorPayoutService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async getAllAdvisorPayouts(req, res, next) {
-    const { productType, advisorName, clientName, fromDate, toDate, page = 1, limit = 1000 } = req.query;
+    const { loanServiceType, advisorName, clientName, fromDate, toDate, page = 1, limit = 1000 } = req.query;
 
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
@@ -144,9 +144,9 @@ class AdvisorPayoutService {
       if(toDate) filters.createdAt.$lte = new Date(toDate);
     }
 
-    if(productType) {
-      filters.productType = {
-        $regex: productType,
+    if(loanServiceType) {
+      filters.loanServiceType = {
+        $regex: loanServiceType,
         $options: "i"
       }
     }
@@ -163,8 +163,8 @@ class AdvisorPayoutService {
       .populate("leadId")
       .sort({ createdAt: -1 });
 
-    if(productType) {
-      advisorPayouts = advisorPayouts.filter((payout) => payout.leadId?.productType?.toLowerCase().includes(productType.toLowerCase()));
+    if(loanServiceType) {
+      advisorPayouts = advisorPayouts.filter((payout) => payout.leadId?.productType?.toLowerCase().includes(loanServiceType.toLowerCase()));
     }
 
     if (clientName) {
@@ -283,13 +283,11 @@ class AdvisorPayoutService {
       leadId: payout.leadId,
       finalPayout: true
     })
-
     if(!hasOtherFinalPayouts) {
       await Lead.findByIdAndUpdate(payout.leadId, { finalPayout: false })
     }
     
     return {
-      data: null,
       message: "Advisor Payout deleted successfully",
     }
   }

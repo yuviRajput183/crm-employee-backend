@@ -110,7 +110,7 @@ export const editAdvisorPayout = async (req, res, next) => {
 export const deleteAdvisorPayout = async (req, res, next) => {
   try {
     const data = await advisorPayoutService.deleteAdvisorPayout(req, res, next);
-    if (data && data.data)
+    if (data)
       return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
     return next(ErrorResponse.internalServer(error.message));
