@@ -208,7 +208,7 @@ class InvoicesService {
           advisorName: "$advisor.name",
           customerName: "$lead.clientName",
           loanServiceType: "$lead.productType",
-          disbursalAmount: "$lead.disbursalAmount",
+          disbursalAmount: "$lead.loanRequirementAmount",
           leadNo: "$lead.leadNo",
 
           // Banker data
