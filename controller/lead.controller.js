@@ -128,10 +128,97 @@ export const editLead = async (req, res, next) => {
 };
 
 /**
+ * bankerCitiesByStateName - Get all cities in a state which are associated with bankers.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const bankerCitiesByStateName = async (req, res, next) => {
+  const requiredFields = ["stateName"];
+  const missingFields = helperService.validateFields(requiredFields, req.query);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.bankerCitiesByStateName(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * getBanksByCityId - Get all banks associated with a city.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getBanksByCityId = async (req, res, next) => {
+  const requiredFields = ["cityId"];
+  const missingFields = helperService.validateFields(requiredFields, req.query);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+
+  try {
+    const data = await leadService.getBanksByCityId(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * getBankerByBankerId - Get a single banker by ID.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getBankersByBankId = async (req, res, next) => {
+  const requiredFields = ["bankId"];
+  const missingFields = helperService.validateFields(requiredFields, req.query);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.getBankersByBankId(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+export const getBankerByBankerId = async (req, res, next) => {
+  const requiredFields = ["bankerId"];
+  const missingFields = helperService.validateFields(requiredFields, req.query);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.getBankerByBankerId(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
  * getAllMyLeads - Super admin and admin can fetch all my leads and their stats.
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
- * @param {Function} next - The next middleware function for error handling.  
+ * @param {Function} next - The next middleware function for error handling.
  */
 export const getAllMyLeads = async (req, res, next) => {
   try {
@@ -144,24 +231,17 @@ export const getAllMyLeads = async (req, res, next) => {
 };
 
 /**
- * getCustomersByAdvisorId - Get all customers associated with an advisor.
+ * getCustomersByAdvisorId - Get all customers associated with an advisor and loan type.
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.
- * @param {Function} next - The next middleware function for error handling.  
- */ 
-export const getCustomersByAdvisorId = async (req, res, next) => {
-  const requiredFields = ["advisorId"];
-  const missingFields = helperService.validateFields(requiredFields, req.query);
-
-  if (missingFields.length > 0) {
-    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
-    return next(ErrorResponse.badRequest(errorMessage));
-  }
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getCustomersName = async (req, res, next) => {
   try {
-    const data = await leadService.getCustomersByAdvisorId(req, res, next);
+    const data = await leadService.getCustomersName(req, res, next);
     if (data && data.data)
       return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
     return next(ErrorResponse.internalServer(error.message));
   }
-}
+};

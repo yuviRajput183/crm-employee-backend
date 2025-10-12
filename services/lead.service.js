@@ -4,6 +4,7 @@ import Lead from "../models/Lead.model.js";
 import moment from "moment";
 import helperService from "./helper.service.js";
 import Advisor from "../models/Advisor.model.js";
+import Banker from "../models/banker.model.js";
 
 class LeadService {
   /**
@@ -22,10 +23,10 @@ class LeadService {
     }
 
     // check mobile no is unique
-    const existingLead = await Lead.findOne({ mobileNo: data.mobileNo });
-    if (existingLead) {
-      return next(ErrorResponse.badRequest("Mobile number already exists"));
-    }
+    // const existingLead = await Lead.findOne({ mobileNo: data.mobileNo });
+    // if (existingLead) {
+    //   return next(ErrorResponse.badRequest("Mobile number already exists"));
+    // }
 
     const leadNo = await helperService.getNextSequence("leadSerial");
     data.leadNo = leadNo;
@@ -206,13 +207,24 @@ class LeadService {
    */
   async getSignleLead(req, res, next) {
     const leadId = req.params.leadId;
-    const lead = await Lead.findById(leadId)
+    let lead = await Lead.findById(leadId)
       .populate("advisorId", "_id name")
       .populate("allocatedTo", "_id name")
       .populate("createdBy", "_id name");
 
     if (!lead) {
       return next(ErrorResponse.notFound("Lead not found"));
+    }
+
+    if (lead.bankerId) {
+      lead = await lead.populate({
+        path: "bankerId",
+        populate: [
+          { path: "bank", select: "_id bankName" },
+          { path: "city", select: "_id cityName stateName" },
+        ],
+        select: "_id bank city stateName",
+      });
     }
     return {
       data: lead,
@@ -268,21 +280,19 @@ class LeadService {
     }
 
     // Check mobile no is unique
-    if (updates.mobileNo && updates.mobileNo !== existingLead.mobileNo) {
-      const existingLeadMobile = await Lead.findOne({
-        mobileNo: updates.mobileNo,
-      });
-      if (existingLeadMobile && existingLeadMobile._id.toString() !== leadId) {
-        return next(ErrorResponse.badRequest("Mobile number already exists"));
-      }
-    }
+    // if (updates.mobileNo && updates.mobileNo !== existingLead.mobileNo) {
+    //   const existingLeadMobile = await Lead.findOne({
+    //     mobileNo: updates.mobileNo,
+    //   });
+    //   if (existingLeadMobile && existingLeadMobile._id.toString() !== leadId) {
+    //     return next(ErrorResponse.badRequest("Mobile number already exists"));
+    //   }
+    // }
 
     const employee = await Employee.findById(req.user.referenceId);
     if (!employee) {
       return next(ErrorResponse.notFound("Employee not found"));
     }
-
-    // check mobile no is unique
 
     const newHistoryEntry = {};
     let shouldAddHistory = false;
@@ -335,6 +345,11 @@ class LeadService {
       ];
     }
 
+    // attach banker details if feedback last field is "loan disbursed"
+    if (updates.feedback === "Loan Disbursed" && updates.bankerId) {
+      existingLead.bankerId = updates.bankerId;
+    }
+
     for (const key in updates) {
       if (updates.hasOwnProperty(key)) {
         existingLead[key] = updates[key];
@@ -352,6 +367,142 @@ class LeadService {
     return {
       data: updatedLead,
       message: "Lead updated successfully",
+    };
+  }
+
+  /**
+   * bankerCitiesByStateName - Get all cities in a state which are associated with bankers.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async bankerCitiesByStateName(req, res, next) {
+    const { stateName } = req.query;
+    const userId = req.user.referenceId;
+
+    if (!stateName) {
+      return next(ErrorResponse.badRequest("State name is required"));
+    }
+
+    const currentUser = await Employee.findById(userId).select("groupId");
+    if (!currentUser) {
+      return next(ErrorResponse.notFound("Logged-in user not found"));
+    }
+
+    const bankers = await Banker.find({
+      stateName: stateName,
+      createdBy: currentUser.groupId,
+    }).populate("city");
+
+    const uniqueCities = [];
+    const seen = new Set();
+
+    for (const b of bankers) {
+      if (b.city && !seen.has(b.city._id.toString())) {
+        seen.add(b.city._id.toString());
+        uniqueCities.push(b.city);
+      }
+    }
+
+    return {
+      data: uniqueCities,
+      message: `Cities for state '${stateName}' fetched successfully`,
+    };
+  }
+
+  /**
+   * getBanksByCityId - Get all banks associated with a city.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getBanksByCityId(req, res, next) {
+    const { cityId } = req.query;
+    const userId = req.user.referenceId;
+
+    const currentUser = await Employee.findById(userId).select("groupId");
+    if (!currentUser) {
+      return next(ErrorResponse.notFound("Logged-in user not found"));
+    }
+
+    const banks = await Banker.find({
+      createdBy: currentUser.groupId,
+      city: cityId,
+    }).populate("bank");
+
+    const uniqueBanks = [];
+    const seen = new Set();
+
+    for (const b of banks) {
+      if (b.bank && !seen.has(b.bank._id.toString())) {
+        seen.add(b.bank._id.toString());
+        uniqueBanks.push(b.bank);
+      }
+    }
+
+    return {
+      data: uniqueBanks,
+      message: `Banks for city '${cityId}' fetched successfully`,
+    };
+  }
+
+  /**
+   * getBankersByBankId - Get all bankers associated with a bank.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getBankersByBankId(req, res, next) {
+    const { bankId } = req.query;
+    const userId = req.user.referenceId;
+
+    const currentUser = await Employee.findById(userId).select("groupId");
+    if (!currentUser) {
+      return next(ErrorResponse.notFound("Logged-in user not found"));
+    }
+
+    const bankers = await Banker.find({
+      createdBy: currentUser.groupId,
+      bank: bankId,
+    });
+
+    return {
+      data: bankers,
+      message: `Bankers for bank '${bankId}' fetched successfully`,
+    };
+  }
+
+  /**
+   * getBankerByBankerId - Get a single banker by ID.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getBankerByBankerId(req, res, next) {
+    const { bankerId } = req.query;
+    const userId = req.user.referenceId;
+
+    const currentUser = await Employee.findById(userId).select("groupId");
+    if (!currentUser) {
+      return next(ErrorResponse.notFound("Logged-in user not found"));
+    }
+
+    const banker = await Banker.findById(bankerId)
+      .populate("city", "cityName stateName")
+      .populate("bank", "name");
+
+    if (!banker) {
+      return next(ErrorResponse.notFound("Banker not found"));
+    }
+
+    if (banker.createdBy.toString() !== currentUser._id.toString()) {
+      return next(
+        ErrorResponse.forbidden("You are not authorized to view this banker")
+      );
+    }
+    return {
+      data: banker,
+      message: "Banker fetched successfully",
     };
   }
 
@@ -449,51 +600,63 @@ class LeadService {
       }
     });
 
-     const percentageStats = {};
-      Object.keys(feedbackStats).forEach((key) => {
-        const count = feedbackStats[key];
-        percentageStats[key] = {
-          count,
-          percentage:
-            totalLeads > 0
-              ? ((count / totalLeads) * 100).toFixed(2) + "%"
-              : "0%",
-        };
-      });
-
-      const paginatedLeads = filteredLeads.slice(skip, skip + parsedLimit);
-
-      return {
-        data: {
-          total: totalLeads,
-          currentPage: parsedPage,
-          totalPages: Math.ceil(totalLeads / parsedLimit),
-          leads: paginatedLeads,
-          stats: percentageStats,
-        },
-        message: "My Leads retrieved successfully",
+    const percentageStats = {};
+    Object.keys(feedbackStats).forEach((key) => {
+      const count = feedbackStats[key];
+      percentageStats[key] = {
+        count,
+        percentage:
+          totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(2) + "%" : "0%",
       };
+    });
+
+    const paginatedLeads = filteredLeads.slice(skip, skip + parsedLimit);
+
+    return {
+      data: {
+        total: totalLeads,
+        currentPage: parsedPage,
+        totalPages: Math.ceil(totalLeads / parsedLimit),
+        leads: paginatedLeads,
+        stats: percentageStats,
+      },
+      message: "My Leads retrieved successfully",
+    };
   }
 
   /**
-   * getCustomersByAdvisorId - Get all customers name and Id associated with an advisor.
+   * getCustomersByAdvisorId - Get all customers associated with an advisor and loan type.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
    * @param {Function} next - The next middleware function for error handling.
    */
-  async getCustomersByAdvisorId(req, res, next) {
-    const { advisorId } = req.query;
+  async getCustomersName(req, res, next) {
+    const { advisorId, productType } = req.query;
 
-    const customers = await Lead.find({ advisorId })
+    if (!advisorId && !productType) {
+      return {
+        data: [],
+        message: "No advisor or product type provided",
+      };
+    }
+
+    const query = {};
+    if (advisorId) {
+      query.advisorId = advisorId;
+    }
+    if (productType) {
+      query.productType = productType;
+    }
+
+    const customers = await Lead.find(query)
       .select("_id clientName")
-      .sort({ clientName: 1 })
+      .sort({ clientName: 1 });
 
     return {
       data: customers,
       message: "Customers retrieved successfully",
-    }
+    };
   }
-
 }
 
 export default new LeadService();

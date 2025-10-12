@@ -151,6 +151,22 @@ const leadSchema = new mongoose.Schema({
     description: "This shows that invoice is final or not"
   },
 
+  totalInvoiceAmount: {
+    type: Number,
+    default: 0,
+    description: "Total of all invoice amounts (excluding GST)"
+  },
+  invoiceGstAmount: {
+    type: Number,
+    default: 0,
+    description: "Total GST amount from all invoices"
+  },
+  invoiceReceivableAmount: {
+    type: Number,
+    default: 0,
+    description: "Total receivable amount (net + GST - received)"
+  },
+
   advisorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Advisor",
@@ -162,6 +178,12 @@ const leadSchema = new mongoose.Schema({
     ref: "Employee",
   },
 
+  bankerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Banker",
+    description: "Banker assigned when loan is disbursed"
+  },
+
   createdBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Employee',
@@ -170,10 +192,12 @@ const leadSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Employee',
   },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
-  }
+  // createdAt: { 
+  //   type: Date, 
+  //   default: Date.now 
+  // }
+}, {
+  timestamps: true
 });
 
 const Lead = mongoose.models.Lead || mongoose.model("Lead", leadSchema);
