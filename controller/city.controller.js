@@ -26,6 +26,20 @@ export const addCity = async (req, res, next) => {
   }
 };
 
+export const addCitiesFromExcel = async (req, res, next) => {
+  if(!req.file) {
+    return next(ErrorResponse.badRequest("No file uploaded"));
+  }
+
+  try {
+    const data = await CityService.addCitiesFromExcel(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.created(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}
+
 /**
  * listCities - List all states and cities which are created by the owner of the group.
  * @param {Object} req - The HTTP request object.

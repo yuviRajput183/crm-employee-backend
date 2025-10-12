@@ -1,6 +1,8 @@
+import xlsx from "xlsx";
 import ErrorResponse from "../lib/error.res.js";
 import City from "../models/City.model.js";
 import Employee from "../models/Employee.model.js";
+import fs from "fs";
 
 class CityService {
   /**
@@ -45,6 +47,46 @@ class CityService {
     };
   }
 
+  async addCitiesFromExcel(req, res, next) {
+    const createdBy = req.user.referenceId;
+
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let addedCities = [];
+
+    for (const row of sheetData) {
+      const { stateName, cityName } = row;
+
+      const cleanStateName = stateName.trim();
+      const cleanCityName = cityName.trim();
+
+      const exists = await City.findOne({
+        stateName: { $regex: `^${cleanStateName}$`, $options: "i" },
+        cityName: { $regex: `^${cleanCityName}$`, $options: "i" },
+      });
+
+      if (!exists) {
+        const city = new City({
+          stateName: cleanStateName,
+          cityName: cleanCityName,
+          createdBy,
+        });
+        await city.save();
+        addedCities.push(city);
+      }
+    }
+
+    fs.unlinkSync(filePath);
+
+    return {
+      data: addedCities,
+      message: "Cities added successfully",
+    };
+  }
+
   /**
    * listCities - List all states and cities which are created by the owner of the group.
    * @param {Object} req - The HTTP request object.
@@ -75,13 +117,15 @@ class CityService {
     };
   }
 
+  /**
+   * getCitiesByStateName - List all cities in a state.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function.
+   */
   async getCitiesByStateName(req, res, next) {
     const { stateName } = req.query;
     const userId = req.user.referenceId;
-
-    if (!stateName) {
-      return next(ErrorResponse.badRequest("State name is required"));
-    }
 
     const currentUser = await Employee.findById(userId).select("groupId");
     if (!currentUser) {
