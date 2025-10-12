@@ -54,6 +54,12 @@ const advisorSchema = new mongoose.Schema(
       default: false,
       description: "Whether login credentials are set",
     },
+    role: {
+      type: String,
+      default: "advisor",
+      required: true,
+      description: "role of the user",
+    },
     companyName: {
       type: String,
       description: "The name of the company",
