@@ -58,9 +58,10 @@ class AdvisorService {
     //   uploadedPhotoUrl = result.secure_url;
     // }
 
+    // console.log(cityName, stateName);
     // Find the city by name + state name
     const cityDoc = await City.findOne({
-      cityName: { $regex: `^${cityName}$`, $options: "i" },
+       _id: cityName,
       stateName: { $regex: `^${stateName}$`, $options: "i" },
     });
 
