@@ -220,10 +220,9 @@ class LeadService {
       lead = await lead.populate({
         path: "bankerId",
         populate: [
-          { path: "bank", select: "_id bankName" },
-          { path: "city", select: "_id cityName stateName" },
+          { path: "bank" },
+          { path: "city" },
         ],
-        select: "_id bank city stateName",
       });
     }
     return {
@@ -411,13 +410,13 @@ class LeadService {
   }
 
   /**
-   * getBanksByCityId - Get all banks associated with a city.
+   * getBanksByCityId - Get all banks associated with a city and product type.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
    * @param {Function} next - The next middleware function for error handling.
    */
   async getBanksByCityId(req, res, next) {
-    const { cityId } = req.query;
+    const { cityId, leadId } = req.query;
     const userId = req.user.referenceId;
 
     const currentUser = await Employee.findById(userId).select("groupId");
@@ -425,9 +424,20 @@ class LeadService {
       return next(ErrorResponse.notFound("Logged-in user not found"));
     }
 
+    const lead = await Lead.findById(leadId).select("productType");
+    if(!lead){
+      return next(ErrorResponse.notFound("Lead not found"));
+    }
+
+    const leadType = lead.productType?.trim();
+    if(!leadType){
+      return next(ErrorResponse.badRequest("Lead type is required"));
+    }
+
     const banks = await Banker.find({
       createdBy: currentUser.groupId,
       city: cityId,
+      product: leadType,
     }).populate("bank");
 
     const uniqueBanks = [];
@@ -442,18 +452,18 @@ class LeadService {
 
     return {
       data: uniqueBanks,
-      message: `Banks for city '${cityId}' fetched successfully`,
+      message: `Banks for city '${cityId}' and lead type '${leadType}' fetched successfully`,
     };
   }
 
   /**
-   * getBankersByBankId - Get all bankers associated with a bank.
+   * getBankersByBankId - Get Bankers for bank, city, and lead type.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
    * @param {Function} next - The next middleware function for error handling.
    */
   async getBankersByBankId(req, res, next) {
-    const { bankId } = req.query;
+    const { bankId, cityId, leadId } = req.query;
     const userId = req.user.referenceId;
 
     const currentUser = await Employee.findById(userId).select("groupId");
@@ -461,14 +471,26 @@ class LeadService {
       return next(ErrorResponse.notFound("Logged-in user not found"));
     }
 
+    const lead = await Lead.findById(leadId).select("productType");
+    if (!lead) {
+      return next(ErrorResponse.notFound("Lead not found"));
+    }
+
+    const leadType = lead.productType?.trim();
+    if (!leadType) {
+      return next(ErrorResponse.badRequest("Lead type not found"));
+    }
+
     const bankers = await Banker.find({
       createdBy: currentUser.groupId,
       bank: bankId,
+      city: cityId,
+      product: leadType,
     });
 
     return {
       data: bankers,
-      message: `Bankers for bank '${bankId}' fetched successfully`,
+      message: `Bankers for bank '${bankId}', city '${cityId}', and lead type '${leadType}' fetched successfully`,
     };
   }
 

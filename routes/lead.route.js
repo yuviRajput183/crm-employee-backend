@@ -22,8 +22,6 @@ router.get("/all-my-leads", authenticate, isAdminDepartment, getAllMyLeads);
 
 router.get("/customers-by-advisorId", authenticate, isAdminDepartment, getCustomersName);
 
-// Leads for advisor payout
-
 
 
 

@@ -157,7 +157,7 @@ export const bankerCitiesByStateName = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.
  */
 export const getBanksByCityId = async (req, res, next) => {
-  const requiredFields = ["cityId"];
+  const requiredFields = ["cityId", "leadId"];
   const missingFields = helperService.validateFields(requiredFields, req.query);
 
   if (missingFields.length > 0) {
@@ -181,7 +181,7 @@ export const getBanksByCityId = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.
  */
 export const getBankersByBankId = async (req, res, next) => {
-  const requiredFields = ["bankId"];
+  const requiredFields = ["bankId", "cityId", "leadId"];
   const missingFields = helperService.validateFields(requiredFields, req.query);
 
   if (missingFields.length > 0) {

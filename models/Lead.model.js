@@ -55,7 +55,6 @@ const leadSchema = new mongoose.Schema({
   mobileNo: {
     type: String,
     required: true,
-    unique: true
   },
   emailId: {
     type: String,
