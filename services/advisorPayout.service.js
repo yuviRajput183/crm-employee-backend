@@ -3,7 +3,6 @@ import AdvisorPayout from "../models/AdvisorPayout.model.js";
 import Lead from "../models/Lead.model.js";
 
 class AdvisorPayoutService {
-  
   /**
    * getDisbursedUnpaidLeads - Get leads for advisor payout. These leads are disbursed but not paid.
    * @param {Object} req - The HTTP request object.
@@ -41,7 +40,7 @@ class AdvisorPayoutService {
    * addAdvisorPayout - Add an advisor payout of a lead which is disbursed and final payout is false.
    * @param {body(leadId, advisorId, customerName, loanServiceType, disbursalAmount, disbursalDate, payoutPercent, payoutAmount, tdsPercent, tdsAmount, gstApplicable, gstPercent, gstAmount, invoiceNo, invoiceDate, netPayableAmount, processedById, finalPayout, remarks, bankerId, bankName, bankerName, bankerEmailId, bankerDesignation, bankerMobileNo, stateName, cityName)} req - The request body.
    * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.  
+   * @param {Function} next - The next middleware function for error handling.
    */
   async addAdvisorPayout(req, res, next) {
     const {
@@ -55,73 +54,91 @@ class AdvisorPayoutService {
       tdsAmount,
       gstApplicable,
       gstPercent,
-      gstAmount,
+      // gstAmount,
       invoiceNo,
       invoiceDate,
       netPayableAmount,
       processedById,
       finalPayout,
       remarks,
-      bankerId,
-      bankName,
-      bankerName,
-      bankerEmailId,
-      bankerDesignation,
-      bankerMobileNo,
-      stateName,
-      cityName,
     } = req.body;
 
     const employeeId = req.user.referenceId;
 
     const lead = await Lead.findById(leadId);
-    if(!lead) {
+    if (!lead) {
       return next(ErrorResponse.notFound("Lead not found"));
     }
 
-    if(lead.finalPayout === true) {
+    if (lead.finalPayout === true) {
       return next(ErrorResponse.badRequest("Lead is already final payout"));
     }
 
+    const existingPayoutForAdvisor = await AdvisorPayout.findOne({
+      leadId,
+      advisorId,
+    });
+    if (existingPayoutForAdvisor) {
+      return next(
+        ErrorResponse.badRequest(
+          "Payout already exists for this advisor and lead"
+        )
+      );
+    }
+
+    const calculatedPayoutAmount =
+      payoutAmount || (disbursalAmount * payoutPercent) / 100;
+    const calculatedTdsAmount =
+      tdsAmount || (calculatedPayoutAmount * tdsPercent) / 100;
+    const calculatedGstAmount =
+      gstApplicable && gstPercent
+        ? (calculatedPayoutAmount * gstPercent) / 100
+        : 0;
+
+    const calculatedNetPayable =
+      netPayableAmount ||
+      calculatedPayoutAmount - calculatedTdsAmount + calculatedGstAmount;
+
     const newPayout = new AdvisorPayout({
-        leadId,
-        advisorId,
-        disbursalAmount,
-        disbursalDate,
-        payoutPercent,
-        payoutAmount,
-        tdsPercent,
-        tdsAmount,
-        gstApplicable,
-        gstPercent,
-        gstAmount,
-        invoiceNo,
-        invoiceDate,
-        netPayableAmount,
-        processedById,
-        finalPayout,
-        remarks,
-        bankerId,
-        bankName,
-        bankerName,
-        bankerEmailId,
-        bankerDesignation,
-        bankerMobileNo,
-        stateName,
-        cityName,
-        createdBy: employeeId,
-        updatedBy: employeeId,
-    })
+      leadId,
+      advisorId,
+      disbursalAmount,
+      disbursalDate,
+      payoutPercent,
+      payoutAmount: calculatedPayoutAmount,
+      tdsPercent,
+      tdsAmount: calculatedTdsAmount,
+      gstApplicable,
+      gstPercent,
+      gstAmount: calculatedGstAmount,
+      invoiceNo,
+      invoiceDate,
+      netPayableAmount: calculatedNetPayable,
+      processedById,
+      finalPayout,
+      remarks,
+      createdBy: employeeId,
+      updatedBy: employeeId,
+      totalPaidAmount: 0,
+      remainingPayableAmount: calculatedPayoutAmount - calculatedTdsAmount, // initialize for payable tracking
+      remainingGstAmount: calculatedGstAmount,
+    });
 
     await newPayout.save();
 
-    await Lead.findByIdAndUpdate(leadId, { finalPayout}, { new: true})
+    if (finalPayout) {
+      await Lead.findByIdAndUpdate(
+        leadId,
+        { finalPayout: true },
+        { new: true }
+      );
+    }
 
     return {
-        data: newPayout,
-        message: "Advisor Payout added successfully",
-    }
-  } 
+      data: newPayout,
+      message: "Advisor Payout added successfully",
+    };
+  }
 
   /**
    * getAllAdvisorPayouts - Get all advisor payouts.
@@ -130,7 +147,15 @@ class AdvisorPayoutService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async getAllAdvisorPayouts(req, res, next) {
-    const { loanServiceType, advisorName, clientName, fromDate, toDate, page = 1, limit = 1000 } = req.query;
+    const {
+      loanServiceType,
+      advisorName,
+      clientName,
+      fromDate,
+      toDate,
+      page = 1,
+      limit = 1000,
+    } = req.query;
 
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
@@ -138,24 +163,10 @@ class AdvisorPayoutService {
 
     const filters = {};
 
-    if(fromDate || toDate) {
+    if (fromDate || toDate) {
       filters.createdAt = {};
-      if(fromDate) filters.createdAt.$gte = new Date(fromDate);
-      if(toDate) filters.createdAt.$lte = new Date(toDate);
-    }
-
-    if(loanServiceType) {
-      filters.loanServiceType = {
-        $regex: loanServiceType,
-        $options: "i"
-      }
-    }
-
-    if(clientName) {
-      filters.clientName = {
-        $regex: clientName,
-        $options: "i"
-      }
+      if (fromDate) filters.createdAt.$gte = new Date(fromDate);
+      if (toDate) filters.createdAt.$lte = new Date(toDate);
     }
 
     let advisorPayouts = await AdvisorPayout.find(filters)
@@ -163,64 +174,121 @@ class AdvisorPayoutService {
       .populate("leadId")
       .sort({ createdAt: -1 });
 
-    if(loanServiceType) {
-      advisorPayouts = advisorPayouts.filter((payout) => payout.leadId?.productType?.toLowerCase().includes(loanServiceType.toLowerCase()));
+    if (loanServiceType) {
+      advisorPayouts = advisorPayouts.filter((payout) =>
+        payout.leadId?.productType
+          ?.toLowerCase()
+          .trim()
+          .includes(loanServiceType.toLowerCase().trim())
+      );
     }
 
     if (clientName) {
-      advisorPayouts = advisorPayouts.filter(payout =>
-        payout.leadId?.clientName?.toLowerCase().includes(clientName.toLowerCase())
+      advisorPayouts = advisorPayouts.filter((payout) =>
+        payout.leadId?.clientName
+          ?.toLowerCase()
+          .includes(clientName.toLowerCase())
       );
     }
 
     if (advisorName) {
-      advisorPayouts = advisorPayouts.filter(payout =>
-        payout.advisorId?.name?.toLowerCase().includes(advisorName.toLowerCase())
+      advisorPayouts = advisorPayouts.filter((payout) =>
+        payout.advisorId?.name
+          ?.toLowerCase()
+          .includes(advisorName.toLowerCase())
       );
     }
 
-    const paginatedAdvisorPayouts = advisorPayouts.slice(skip, skip + parsedLimit);
+    const paginatedAdvisorPayouts = advisorPayouts.slice(
+      skip,
+      skip + parsedLimit
+    );
+
+    const totalPayoutAmount = advisorPayouts.reduce(
+      (sum, p) => sum + (p.payoutAmount || 0),
+      0
+    );
+
+    const totalTdsAmount = advisorPayouts.reduce(
+      (sum, p) => sum + (p.tdsAmount || 0),
+      0
+    );
+
+    const totalGstAmount = advisorPayouts.reduce(
+      (sum, p) => sum + (p.gstAmount || 0),
+      0
+    );
+
+    const grossAmount = totalPayoutAmount + totalGstAmount;
 
     return {
       data: {
+        totals: {
+          totalPayoutAmount,
+          totalTdsAmount,
+          totalGstAmount,
+          grossAmount,
+        },
         total: advisorPayouts.length,
         currentPage: parsedPage,
         totalPages: Math.ceil(advisorPayouts.length / parsedLimit),
         advisorPayouts: paginatedAdvisorPayouts,
       },
       message: "Advisor Payouts retrieved successfully",
-    }
-
+    };
   }
 
   /**
    * getSingleAdvisorPayout - Get a single advisor payout by ID.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.  
+   * @param {Function} next - The next middleware function for error handling.
    */
   async getSingleAdvisorPayout(req, res, next) {
     const { id } = req.params;
 
     const advisorPayout = await AdvisorPayout.findById(id)
       .populate("advisorId", "_id name advisorCode")
-      .populate("leadId")
-      .populate("processedById", "_id processedBy")
-      .populate("bankerId");
-    
-    if(!advisorPayout) {
+      .populate({
+        path: "leadId",
+        populate: {
+          path: "bankerId",
+        },
+      })
+      .populate("processedById", "_id processedBy");
+
+    if (!advisorPayout) {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
     }
 
-    if (advisorPayout.advisorId) {
-      const { name, advisorCode } = advisorPayout.advisorId;
-      advisorPayout.advisorId.name = advisorCode ? `${name} - ${advisorCode}` : name;
-    }
+    // if (advisorPayout.advisorId) {
+    //   const { name, advisorCode } = advisorPayout.advisorId;
+    //   advisorPayout.advisorId.name = advisorCode
+    //     ? `${name} - ${advisorCode}`
+    //     : name;
+    // }
+
+    const advisorDisplayName = advisorPayout.advisorId
+      ? advisorPayout.advisorId.advisorCode
+        ? `${advisorPayout.advisorId.name} - ${advisorPayout.advisorId.advisorCode}`
+        : advisorPayout.advisorId.name
+      : null;
+
+    const bankerDetails =
+      advisorPayout.leadId && advisorPayout.leadId.bankerId
+        ? advisorPayout.leadId.bankerId
+        : null;
+
+    const payoutData = {
+      ...advisorPayout.toObject(),
+      advisorDisplayName,
+      bankerDetails,
+    };
 
     return {
-      data: advisorPayout,
+      data: payoutData,
       message: "Advisor Payout retrieved successfully",
-    }
+    };
   }
 
   /**
@@ -233,64 +301,107 @@ class AdvisorPayoutService {
     const { id } = req.params;
 
     const existingPayout = await AdvisorPayout.findById(id);
-    if(!existingPayout) {
+    if (!existingPayout) {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
     }
 
     const lead = await Lead.findById(existingPayout.leadId);
-    if(!lead) {
+    if (!lead) {
       return next(ErrorResponse.notFound("Lead not found"));
     }
 
-    const updates = { 
+    if(req.body.payoutPercent) {
+       existingPayout.payoutAmount = (existingPayout.disbursalAmount * req.body.payoutPercent) / 100;
+       existingPayout.tdsAmount = (existingPayout.payoutAmount * req.body.tdsPercent) / 100;
+    }
+    if(req.body.tdsPercent) {
+       existingPayout.tdsAmount = (existingPayout.payoutAmount * req.body.tdsPercent) / 100;
+    }
+    if(req.body.gstPercent) {
+      existingPayout.gstAmount = req.body.gstApplicable ? (existingPayout.payoutAmount * req.body.gstPercent) / 100 : 0;
+    }
+
+    if(req.body.payoutPercent || req.body.tdsPercent || req.body.gstPercent){
+      existingPayout.netPayableAmount = existingPayout.payoutAmount - existingPayout.tdsAmount + existingPayout.gstAmount;
+    }
+    if(req.body.payoutAmount || req.body.tdsAmount){
+      existingPayout.remainingPayableAmount = payoutAmount - tdsAmount;
+    }
+
+    if(req.body.gstAmount){
+      existingPayout.remainingGstAmount = gstAmount;
+    }
+
+     if(req.body.payoutPercent || req.body.tdsPercent || req.body.gstPercent){
+      existingPayout.save()
+     }
+
+    const updates = {
       ...req.body,
       loanServiceType: lead.productType,
-      customerName: lead.clientName, 
+      customerName: lead.clientName,
       updatedBy: req.user.referenceId,
     };
 
-    const updatedPayout = await AdvisorPayout.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+    const updatedPayout = await AdvisorPayout.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true,
+    });
 
-    if(typeof updates.finalPayout === "boolean") {
-      await Lead.findByIdAndUpdate(updatedPayout.leadId, {
-        finalPayout: updates.finalPayout
-      })
-    }
+    const payoutsOfLead = await AdvisorPayout.find({
+      leadId: updatedPayout.leadId
+    });
+    const anyFinalTrue = payoutsOfLead.some((p) => p.finalPayout === true);
+
+    await Lead.findByIdAndUpdate(updatedPayout.leadId, {
+      finalPayout: anyFinalTrue, // true if any payout has finalPayout true, else false
+    })
 
     return {
       data: updatedPayout,
       message: "Advisor Payout updated successfully",
-    }
+    };
   }
 
   /**
    * deleteAdvisorPayout - Delete an advisor payout and update the final payout flag in lead if no other final payouts exist.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.  
+   * @param {Function} next - The next middleware function for error handling.
    */
   async deleteAdvisorPayout(req, res, next) {
     const { id } = req.params;
 
     const payout = await AdvisorPayout.findById(id);
-    if(!payout) {
+    if (!payout) {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
     }
+
+    //  const { leadId, finalPayout } = payout;
 
     await AdvisorPayout.findByIdAndDelete(id);
 
     const hasOtherFinalPayouts = await AdvisorPayout.exists({
       leadId: payout.leadId,
-      finalPayout: true
-    })
-    if(!hasOtherFinalPayouts) {
-      await Lead.findByIdAndUpdate(payout.leadId, { finalPayout: false })
+      finalPayout: true,
+    });
+    if (!hasOtherFinalPayouts) {
+      await Lead.findByIdAndUpdate(payout.leadId, { finalPayout: false });
     }
-    
+
     return {
       message: "Advisor Payout deleted successfully",
-    }
+    };
   }
 }
+
+// payables api =>
+
+// ek api bnaye ge jo ki frontend se lead id legi aur fir jin bhi advisor payout me vo leadId h unhe return kregi. is se hum ek lead k sbhi advisor payout find kr skte h.
+// ek api bnaye ge jo frontend se advisor ka name legi(advisor name same bhi ho skte h isliye uski id bhejegi) aur uski advisor payout ki details return kregi.
+// ek api bnaye ge jo ki 1 specific advisor payout k related  payables ko add/create kregi mtlab ki jab hum payables add/create krege toh usme advisor payout ki id store krege. jab hum payable create kr rhe hh toh hume advisor payout vale document me bhi amount ko update krna hoga.
+// ek api payables ko update krne ki hogi, same isme bhi hame advisor payout vale doocument me amount ko update krna hoga
+// ek api payables ko delete krne ki hogi, same isme bhi hame advisor payout vale doocument me amount ko update krna hoga
+// ek api sbhi payables ko fetch kregi.
 
 export default new AdvisorPayoutService();

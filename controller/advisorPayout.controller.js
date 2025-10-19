@@ -12,7 +12,7 @@ import advisorPayoutService from "../services/advisorPayout.service.js";
  */
 export const getDisbursedUnpaidLeads = async (req, res, next) => {
   try {
-    const data = await leadService.getDisbursedUnpaidLeads(req, res, next);
+    const data = await advisorPayoutService.getDisbursedUnpaidLeads(req, res, next);
     if (data && data.data)
       return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
@@ -27,8 +27,8 @@ export const getDisbursedUnpaidLeads = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.
  */
 export const addAdvisorPayout = async (req, res, next) => {
-    const requiredFields = ["leadId", "advisorId", "disbursalAmount", "disbursalDate", "payoutPercent","gstApplicable", "processedById", "finalPayout", 
-    ];
+    const requiredFields = ["leadId", "advisorId", "disbursalAmount", "disbursalDate", "payoutPercent","gstApplicable", "processedById", "finalPayout"];
+    
     const missingFields = helperService.validateFields(requiredFields, req.body);
   
     if (missingFields.length > 0) {

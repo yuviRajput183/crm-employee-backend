@@ -53,17 +53,18 @@ const advisorPayoutSchema = new mongoose.Schema(
     },
     remarks: String,
 
-    bankerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Banker",
+    totalPaidAmount: {
+      type: Number,
+      default: 0
     },
-    bankName: String,
-    bankerName: String,
-    bankerEmailId: String,
-    bankerDesignation: String,
-    bankerMobileNo: String,
-    stateName: String,
-    cityName: String,
+
+    remainingGstAmount: {
+      type: Number,
+    },
+
+    remainingPayableAmount: {
+      type: Number
+    },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
