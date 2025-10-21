@@ -17,6 +17,8 @@ import sliderRoutes from "./routes/slider.route.js";
 import leadRoutes from "./routes/lead.route.js";
 import advisorPayoutRoutes from "./routes/advisorPayout.route.js";
 import invoicesRoutes from "./routes/invoices.route.js";
+import receivableRoutes from "./routes/receivable.route.js";
+import payablesRoutes from "./routes/payables.route.js";
 
 dotenv.config();
 
@@ -47,6 +49,8 @@ app.use('/api/v1/sliders', sliderRoutes);
 app.use('/api/v1/leads', leadRoutes);
 app.use('/api/v1/advisorPayouts', advisorPayoutRoutes);
 app.use('/api/v1/invoices', invoicesRoutes);
+app.use('/api/v1/receivables', receivableRoutes);
+app.use('/api/v1/payables', payablesRoutes);
 // app.use('/api/v1/license', licenseRoutes);
 
 app.get("/", (req, res) => {
