@@ -53,10 +53,10 @@ const advisorPayoutSchema = new mongoose.Schema(
     },
     remarks: String,
 
-    totalPaidAmount: {
-      type: Number,
-      default: 0
-    },
+    // totalPaidAmount: {
+    //   type: Number,
+    //   default: 0
+    // },
 
     remainingGstAmount: {
       type: Number,

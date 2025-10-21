@@ -1,6 +1,7 @@
 import ErrorResponse from "../lib/error.res.js";
 import AdvisorPayout from "../models/AdvisorPayout.model.js";
 import Lead from "../models/Lead.model.js";
+import Payables from "../models/Payables.model.js";
 
 class AdvisorPayoutService {
   /**
@@ -119,7 +120,7 @@ class AdvisorPayoutService {
       remarks,
       createdBy: employeeId,
       updatedBy: employeeId,
-      totalPaidAmount: 0,
+      // totalPaidAmount: 0,
       remainingPayableAmount: calculatedPayoutAmount - calculatedTdsAmount, // initialize for payable tracking
       remainingGstAmount: calculatedGstAmount,
     });
@@ -310,55 +311,121 @@ class AdvisorPayoutService {
       return next(ErrorResponse.notFound("Lead not found"));
     }
 
-    if(req.body.payoutPercent) {
-       existingPayout.payoutAmount = (existingPayout.disbursalAmount * req.body.payoutPercent) / 100;
-       existingPayout.tdsAmount = (existingPayout.payoutAmount * req.body.tdsPercent) / 100;
+    const payables = await Payables.find({ payoutId: id });
+    const totalPaidPayable = payables
+      .filter((p) => p.paymentAgainst === "payableAmount")
+      .reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+    const totalPaidGst = payables
+      .filter((p) => p.paymentAgainst === "gstPayment")
+      .reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+
+    // const totalPaid = totalPaidPayable + totalPaidGst;
+
+    const {
+      advisorId,
+      disbursalAmount,
+      disbursalDate,
+      payoutPercent,
+      tdsPercent,
+      gstPercent,
+      gstApplicable,
+      invoiceNo,
+      invoiceDate,
+      remarks,
+      finalPayout,
+    } = req.body;
+
+    if (disbursalAmount !== undefined) {
+      existingPayout.disbursalAmount = disbursalAmount;
     }
-    if(req.body.tdsPercent) {
-       existingPayout.tdsAmount = (existingPayout.payoutAmount * req.body.tdsPercent) / 100;
+    if (disbursalDate !== undefined) {
+      existingPayout.disbursalDate = disbursalDate;
     }
-    if(req.body.gstPercent) {
-      existingPayout.gstAmount = req.body.gstApplicable ? (existingPayout.payoutAmount * req.body.gstPercent) / 100 : 0;
+    if (invoiceNo !== undefined) existingPayout.invoiceNo = invoiceNo;
+    if (invoiceDate !== undefined) existingPayout.invoiceDate = invoiceDate;
+    if (remarks !== undefined) existingPayout.remarks = remarks;
+    if (finalPayout !== undefined) existingPayout.finalPayout = finalPayout;
+    if(advisorId !== undefined) existingPayout.advisorId = advisorId;
+
+    if (payoutPercent !== undefined) {
+      existingPayout.payoutPercent = payoutPercent;
+    }
+    if (tdsPercent !== undefined) {
+      existingPayout.tdsPercent = tdsPercent;
+    }
+    if (gstApplicable !== undefined) {
+      existingPayout.gstApplicable = gstApplicable;
+    }
+    if (gstPercent !== undefined) {
+      existingPayout.gstPercent = gstPercent;
     }
 
-    if(req.body.payoutPercent || req.body.tdsPercent || req.body.gstPercent){
-      existingPayout.netPayableAmount = existingPayout.payoutAmount - existingPayout.tdsAmount + existingPayout.gstAmount;
+    existingPayout.payoutAmount =
+      (existingPayout.disbursalAmount * existingPayout.payoutPercent) / 100;
+
+    existingPayout.tdsAmount =
+      (existingPayout.payoutAmount * (existingPayout.tdsPercent || 0)) / 100;
+
+    existingPayout.gstAmount = existingPayout.gstApplicable
+      ? (existingPayout.payoutAmount * (existingPayout.gstPercent || 0)) / 100
+      : 0;
+
+    existingPayout.netPayableAmount =
+      existingPayout.payoutAmount -
+      existingPayout.tdsAmount +
+      (existingPayout.gstAmount || 0);
+
+    if (existingPayout.payoutAmount < totalPaidPayable) {
+      return next(
+        ErrorResponse.badRequest(
+          `Cannot decrease payout amount below already paid amount (₹${totalPaidPayable})`
+        )
+      );
     }
-    if(req.body.payoutAmount || req.body.tdsAmount){
-      existingPayout.remainingPayableAmount = payoutAmount - tdsAmount;
+
+    if (existingPayout.gstAmount < totalPaidGst) {
+      return next(
+        ErrorResponse.badRequest(
+          `Cannot decrease gst amount below already paid amount (₹${totalPaidGst})`
+        )
+      );
     }
 
-    if(req.body.gstAmount){
-      existingPayout.remainingGstAmount = gstAmount;
-    }
+    // if (existingPayout.netPayableAmount < totalPaid) {
+    //   return next(
+    //     ErrorResponse.badRequest(
+    //       `Cannot decrease total Net Payable (₹${existingPayout.netPayableAmount}) below already paid (₹${totalPaid})`
+    //     )
+    //   );
+    // }
 
-     if(req.body.payoutPercent || req.body.tdsPercent || req.body.gstPercent){
-      existingPayout.save()
-     }
+    existingPayout.remainingPayableAmount = Math.max(
+      existingPayout.payoutAmount - existingPayout.tdsAmount - totalPaidPayable,
+      0
+    );
+    existingPayout.remainingGstAmount = Math.max(
+      existingPayout.gstAmount - totalPaidGst,
+      0
+    );
 
-    const updates = {
-      ...req.body,
-      loanServiceType: lead.productType,
-      customerName: lead.clientName,
-      updatedBy: req.user.referenceId,
-    };
+    existingPayout.loanServiceType = lead.productType;
+    existingPayout.customerName = lead.clientName;
+    existingPayout.updatedBy = req.user.referenceId;
 
-    const updatedPayout = await AdvisorPayout.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true,
-    });
+    await existingPayout.save();
 
     const payoutsOfLead = await AdvisorPayout.find({
-      leadId: updatedPayout.leadId
-    });
-    const anyFinalTrue = payoutsOfLead.some((p) => p.finalPayout === true);
-
-    await Lead.findByIdAndUpdate(updatedPayout.leadId, {
-      finalPayout: anyFinalTrue, // true if any payout has finalPayout true, else false
+      leadId: existingPayout.leadId
     })
 
+    const anyFinalTrue = payoutsOfLead.some((p) => p.finalPayout === true);
+
+    await Lead.findByIdAndUpdate(existingPayout.leadId, {
+      finalPayout: anyFinalTrue, // true if any payout has finalPayout true, else false
+    });
+
     return {
-      data: updatedPayout,
+      data: existingPayout,
       message: "Advisor Payout updated successfully",
     };
   }
@@ -370,7 +437,7 @@ class AdvisorPayoutService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async deleteAdvisorPayout(req, res, next) {
-    const { id } = req.params;
+    const { id } = req.body;
 
     const payout = await AdvisorPayout.findById(id);
     if (!payout) {

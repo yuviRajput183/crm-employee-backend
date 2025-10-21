@@ -92,6 +92,14 @@ export const getSingleAdvisorPayout = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.  
  */
 export const editAdvisorPayout = async (req, res, next) => {
+  const requiredFields = ["id"];
+  const missingFields = helperService.validateFields(requiredFields, req.params);
+
+  if (missingFields.length > 0) {
+    return next(
+      ErrorResponse.badRequest(`Missing fields: ${missingFields.join(", ")}`)
+    );
+  }
   try {
     const data = await advisorPayoutService.editAdvisorPayout(req, res, next);
     if (data && data.data)
@@ -108,6 +116,14 @@ export const editAdvisorPayout = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.  
  */
 export const deleteAdvisorPayout = async (req, res, next) => {
+  const requiredFields = ["id"];
+  const missingFields = helperService.validateFields(requiredFields, req.body);
+
+  if (missingFields.length > 0) {
+    return next(
+      ErrorResponse.badRequest(`Missing fields: ${missingFields.join(", ")}`)
+    );
+  }
   try {
     const data = await advisorPayoutService.deleteAdvisorPayout(req, res, next);
     if (data)

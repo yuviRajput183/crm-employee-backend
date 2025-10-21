@@ -9,6 +9,6 @@ router.post("/add", authenticate, isAdminDepartment, addAdvisorPayout);
 router.get("/all-advisor-payouts", authenticate, isAdminDepartment, getAllAdvisorPayouts);
 router.get("/single-advisor-payout/:id", authenticate, isAdminDepartment, getSingleAdvisorPayout);
 router.put("/edit-advisor-payout/:id", authenticate, isAdminDepartment, editAdvisorPayout);
-router.delete("/delete-advisor-payout/:id", authenticate, isAdminDepartment, deleteAdvisorPayout);
+router.delete("/delete-advisor-payout", authenticate, isAdminDepartment, deleteAdvisorPayout);
 
 export default router;
