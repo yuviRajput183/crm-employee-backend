@@ -254,12 +254,19 @@ class AdvisorPayoutService {
         path: "leadId",
         populate: {
           path: "bankerId",
+          populate: {
+            path: "bank city",
+          },
         },
       })
       .populate("processedById", "_id processedBy");
 
     if (!advisorPayout) {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
+    }
+
+    if (!advisorPayout.leadId) {
+      return next(ErrorResponse.notFound("Lead not found or deleted"));
     }
 
     // if (advisorPayout.advisorId) {
@@ -345,7 +352,7 @@ class AdvisorPayoutService {
     if (invoiceDate !== undefined) existingPayout.invoiceDate = invoiceDate;
     if (remarks !== undefined) existingPayout.remarks = remarks;
     if (finalPayout !== undefined) existingPayout.finalPayout = finalPayout;
-    if(advisorId !== undefined) existingPayout.advisorId = advisorId;
+    if (advisorId !== undefined) existingPayout.advisorId = advisorId;
 
     if (payoutPercent !== undefined) {
       existingPayout.payoutPercent = payoutPercent;
@@ -415,8 +422,8 @@ class AdvisorPayoutService {
     await existingPayout.save();
 
     const payoutsOfLead = await AdvisorPayout.find({
-      leadId: existingPayout.leadId
-    })
+      leadId: existingPayout.leadId,
+    });
 
     const anyFinalTrue = payoutsOfLead.some((p) => p.finalPayout === true);
 

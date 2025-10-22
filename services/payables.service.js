@@ -244,12 +244,19 @@ class PayablesService {
         path: "leadId",
         populate: {
           path: "bankerId",
+          populate: {
+            path: "bank city",
+          },
         },
       })
       .populate("payoutId");
     if (!payable) {
       return next(ErrorResponse.notFound("Payable not found"));
     }
+    if(!payable.payoutId) {
+      return next(ErrorResponse.notFound("Advisor Payout not found or deleted"));
+    }
+    
     const advisorDisplayName = payable.advisorId
       ? payable.advisorId.advisorCode
         ? `${payable.advisorId.name} - ${payable.advisorId.advisorCode}`
