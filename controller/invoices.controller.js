@@ -26,7 +26,7 @@ export const getDisbursedLeadsWithoutInvoice  = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.    
  */
 export const addInvoice = async (req, res, next) => {
-    const requiredFields = ["leadId", "disbursalDate", "invoiceNo", "invoiceDate", "netReceivableAmount", "processedById", "finalInvoice", "payoutPercent"
+    const requiredFields = ["leadId", "invoiceNo", "invoiceDate", "processedById", "finalInvoice", "payoutPercent"
     ];
     const missingFields = helperService.validateFields(requiredFields, req.body);
 

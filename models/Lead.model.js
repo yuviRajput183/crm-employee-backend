@@ -150,22 +150,6 @@ const leadSchema = new mongoose.Schema({
     description: "This shows that invoice is final or not"
   },
 
-  totalInvoiceAmount: {
-    type: Number,
-    default: 0,
-    description: "Total of all invoice amounts (excluding GST)"
-  },
-  invoiceGstAmount: {
-    type: Number,
-    default: 0,
-    description: "Total GST amount from all invoices"
-  },
-  invoiceReceivableAmount: {
-    type: Number,
-    default: 0,
-    description: "Total receivable amount (net + GST - received)"
-  },
-
   advisorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Advisor",

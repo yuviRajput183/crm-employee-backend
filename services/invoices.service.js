@@ -1,6 +1,10 @@
+import mongoose from "mongoose";
 import ErrorResponse from "../lib/error.res.js";
 import Invoice from "../models/Invoices.model.js";
 import Lead from "../models/Lead.model.js";
+import InvoiceMaster from "../models/InvoiceMaster.model.js";
+import { populate } from "dotenv";
+import Receivable from "../models/Receivable.model.js";
 
 class InvoicesService {
   /**
@@ -47,6 +51,7 @@ class InvoicesService {
     const {
       leadId,
       disbursalDate,
+      disbursalAmount,
       payoutPercent,
       payoutAmount,
       tdsPercent,
@@ -60,64 +65,104 @@ class InvoicesService {
       processedById,
       finalInvoice,
       remarks,
-      bankerId,
-      bankName,
-      bankerName,
-      bankerEmailId,
-      bankerDesignation,
-      bankerMobileNo,
-      stateName,
-      cityName,
     } = req.body;
 
     const employeeId = req.user.referenceId;
 
+    const numberFields = [
+      { name: "netReceivableAmount", value: netReceivableAmount },
+      { name: "gstAmount", value: gstAmount },
+      { name: "payoutAmount", value: payoutAmount },
+      { name: "tdsAmount", value: tdsAmount },
+    ];
+
+    for (const field of numberFields) {
+      if (field.value != null && field.value < 0) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} cannot be negative`)
+        );
+      }
+    }
+
+    const percentFields = [
+      { name: "gstPercent", value: gstPercent },
+      { name: "payoutPercent", value: payoutPercent },
+      { name: "tdsPercent", value: tdsPercent },
+    ];
+
+    for (const field of percentFields) {
+      if (field.value != null && (field.value < 0 || field.value > 100)) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} must be between 0 and 100`)
+        );
+      }
+    }
+
     const lead = await Lead.findById(leadId);
-    if (!lead) {
-      return next(ErrorResponse.notFound("Lead not found"));
-    }
-
-    if (lead.finalInvoice === true) {
+    if (!lead) return next(ErrorResponse.notFound("Lead not found"));
+    if (lead.finalInvoice === true)
       return next(ErrorResponse.badRequest("Lead is already final invoice"));
-    }
 
-    const newInvoice = new Invoice({
+    const calculatedPayoutAmount =
+      payoutAmount || (disbursalAmount * payoutPercent) / 100;
+    const calculatedTdsAmount =
+      tdsAmount || (calculatedPayoutAmount * tdsPercent) / 100;
+    const calculatedGstAmount = gstPercent
+      ? (calculatedPayoutAmount * gstPercent) / 100
+      : 0;
+    const calculatedNetReceivable =
+      netReceivableAmount ||
+      calculatedPayoutAmount - calculatedTdsAmount + calculatedGstAmount;
+
+    const invoiceMaster = await InvoiceMaster.findOneAndUpdate(
+      { leadId },
+      {
+        $inc: {
+          invoiceReceivableAmount: calculatedPayoutAmount - calculatedTdsAmount,
+          invoiceGstAmount: calculatedGstAmount,
+          remainingReceivableAmount:
+            calculatedPayoutAmount - calculatedTdsAmount,
+          remainingGstAmount: calculatedGstAmount,
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+
+    const newInvoice = await Invoice.create({
+      invoiceMasterId: invoiceMaster._id,
       leadId,
       disbursalDate,
+      disbursalAmount,
       payoutPercent,
-      payoutAmount,
+      payoutAmount: calculatedPayoutAmount,
       tdsPercent,
-      tdsAmount,
+      tdsAmount: calculatedTdsAmount,
       gstApplicable,
       gstPercent,
-      gstAmount,
+      gstAmount: calculatedGstAmount,
       invoiceNo,
       invoiceDate,
-      netReceivableAmount,
+      netReceivableAmount: calculatedNetReceivable,
       processedById,
       finalInvoice,
       remarks,
-      bankerId,
-      bankName,
-      bankerName,
-      bankerEmailId,
-      bankerDesignation,
-      bankerMobileNo,
-      stateName,
-      cityName,
       createdBy: employeeId,
       updatedBy: employeeId,
     });
 
-    await newInvoice.save();
-
-    if (typeof finalInvoice === "boolean") {
-      await Lead.findByIdAndUpdate(leadId, { finalInvoice: finalInvoice });
+    if (finalInvoice) {
+      await Lead.findByIdAndUpdate(
+        leadId,
+        { finalInvoice: true },
+        { new: true }
+      );
     }
-
     return {
+      message: "Invoice created successfully.",
       data: newInvoice,
-      message: "Invoice added successfully",
     };
   }
 
@@ -210,21 +255,44 @@ class InvoicesService {
           loanServiceType: "$lead.productType",
           disbursalAmount: "$lead.loanRequirementAmount",
           leadNo: "$lead.leadNo",
-
-          // Banker data
-          bankerName: "$banker.name",
-          bankerEmailId: "$banker.emailId",
-          bankerDesignation: "$banker.designation",
-          bankerMobileNo: "$banker.mobileNo",
-          bankName: "$banker.bankName",
         },
       },
     ];
 
     const invoices = await Invoice.aggregate(pipeline);
 
+    const totalPayoutAmount = invoices.reduce(
+      (sum, p) => sum + (p.payoutAmount || 0),
+      0
+    );
+
+    const paginatedInvoices = invoices.slice(skip, skip + parsedLimit);
+
+    const totalTdsAmount = invoices.reduce(
+      (sum, p) => sum + (p.tdsAmount || 0),
+      0
+    );
+
+    const totalGstAmount = invoices.reduce(
+      (sum, p) => sum + (p.gstAmount || 0),
+      0
+    );
+
+    const grossAmount = totalPayoutAmount + totalGstAmount;
+
     return {
-      data: invoices,
+      data: {
+        totals: {
+          totalPayoutAmount,
+          totalTdsAmount,
+          totalGstAmount,
+          grossAmount,
+        },
+        total: invoices.length,
+        currentPage: parsedPage,
+        totalPages: Math.ceil(invoices.length / parsedLimit),
+        invoices: paginatedInvoices,
+      },
       message: "Invoices retrieved successfully",
     };
   }
@@ -237,16 +305,49 @@ class InvoicesService {
     const { id } = req.params;
 
     const invoice = await Invoice.findById(id)
-      .populate("leadId")
-      .populate("processedById")
-      .populate("bankerId");
+      .populate({
+        path: "leadId",
+        populate: [
+          {
+            path: "bankerId",
+            populate: {
+              path: "bank city",
+            },
+          },
+          {
+            path: "advisorId",
+          },
+        ],
+      })
+      .populate("processedById");
 
     if (!invoice) {
       return next(ErrorResponse.notFound("Invoice not found"));
     }
 
+    if (!invoice.leadId) {
+      return next(ErrorResponse.notFound("Lead not found or deleted"));
+    }
+
+    const advisorDisplayName = invoice.leadId.advisorId
+      ? invoice.leadId.advisorId.advisorCode
+        ? `${invoice.leadId.advisorId.name} - ${invoice.leadId.advisorId.advisorCode}`
+        : invoice.leadId.advisorId.name
+      : null;
+
+    const bankerDetails =
+      invoice.leadId && invoice.leadId.bankerId
+        ? invoice.leadId.bankerId
+        : null;
+
+    const invoiceData = {
+      ...invoice.toObject(),
+      advisorDisplayName,
+      bankerDetails,
+    };
+
     return {
-      data: invoice,
+      data: invoiceData,
       message: "Invoice retrieved successfully",
     };
   }
@@ -266,24 +367,154 @@ class InvoicesService {
       return next(ErrorResponse.notFound("Invoice not found"));
     }
 
-    const updatedData = {
-      ...req.body,
-      updatedBy: employeeId,
-    };
-
-    const updatedInvoice = await Invoice.findByIdAndUpdate(id, updatedData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (typeof req.body.finalInvoice === "boolean") {
-      await Lead.findByIdAndUpdate(updatedInvoice.leadId, {
-        finalInvoice: req.body.finalInvoice,
-      });
+    const numberFields = [
+      { name: "netReceivableAmount", value: req.body.netReceivableAmount },
+      { name: "gstAmount", value: req.body.gstAmount },
+      { name: "payoutAmount", value: req.body.payoutAmount },
+      { name: "tdsAmount", value: req.body.tdsAmount },
+    ];
+    for (const field of numberFields) {
+      if (field.value != null && field.value < 0) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} cannot be negative`)
+        );
+      }
     }
 
+    const percentFields = [
+      { name: "gstPercent", value: req.body.gstPercent },
+      { name: "payoutPercent", value: req.body.payoutPercent },
+      { name: "tdsPercent", value: req.body.tdsPercent },
+    ];
+    for (const field of percentFields) {
+      if (field.value != null && (field.value < 0 || field.value > 100)) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} must be between 0 and 100`)
+        );
+      }
+    }
+
+    const lead = await Lead.findById(existingInvoice.leadId);
+    if (!lead) return next(ErrorResponse.notFound("Lead not found"));
+
+    const invoiceMaster = await InvoiceMaster.findOne({
+      leadId: existingInvoice.leadId,
+    });
+    if (!invoiceMaster)
+      return next(ErrorResponse.notFound("Invoice Master not found"));
+
+    const oldPayoutAmount = existingInvoice.payoutAmount || 0;
+    const oldTdsAmount = existingInvoice.tdsAmount || 0;
+    const oldGstAmount = existingInvoice.gstAmount || 0;
+
+    const {
+      invoiceNo,
+      invoiceDate,
+      disbursalDate,
+      disbursalAmount,
+      finalInvoice,
+      payoutPercent,
+      tdsPercent,
+      gstPercent,
+      processedById,
+      remarks,
+    } = req.body;
+
+    if (disbursalAmount !== undefined)
+      existingInvoice.disbursalAmount = disbursalAmount;
+    if (disbursalDate !== undefined)
+      existingInvoice.disbursalDate = disbursalDate;
+    if (processedById !== undefined)
+      existingInvoice.processedById = processedById;
+    if (invoiceNo !== undefined) existingInvoice.invoiceNo = invoiceNo;
+    if (invoiceDate !== undefined) existingInvoice.invoiceDate = invoiceDate;
+    if (remarks !== undefined) existingInvoice.remarks = remarks;
+    if (finalInvoice !== undefined) existingInvoice.finalInvoice = finalInvoice;
+    if (payoutPercent !== undefined)
+      existingInvoice.payoutPercent = payoutPercent;
+    if (tdsPercent !== undefined) existingInvoice.tdsPercent = tdsPercent;
+    if (gstPercent !== undefined) existingInvoice.gstPercent = gstPercent;
+
+    const newPayoutAmount =
+      (existingInvoice.disbursalAmount * (existingInvoice.payoutPercent || 0)) /
+      100;
+
+    const newTdsAmount =
+      (newPayoutAmount * (existingInvoice.tdsPercent || 0)) / 100;
+
+    const newGstAmount =
+      (newPayoutAmount * (existingInvoice.gstPercent || 0)) / 100;
+
+    const newNetReceivableAmount =
+      newPayoutAmount - newTdsAmount + newGstAmount;
+
+    existingInvoice.payoutAmount = newPayoutAmount;
+    existingInvoice.tdsAmount = newTdsAmount;
+    existingInvoice.gstAmount = newGstAmount;
+    existingInvoice.netReceivableAmount = newNetReceivableAmount;
+
+    invoiceMaster.invoiceReceivableAmount -= oldPayoutAmount - oldTdsAmount;
+    invoiceMaster.invoiceGstAmount -= oldGstAmount;
+    invoiceMaster.remainingReceivableAmount -= oldPayoutAmount - oldTdsAmount;
+    invoiceMaster.remainingGstAmount -= oldGstAmount;
+
+    invoiceMaster.invoiceReceivableAmount += newPayoutAmount - newTdsAmount;
+    invoiceMaster.invoiceGstAmount += newGstAmount;
+    invoiceMaster.remainingReceivableAmount += newPayoutAmount - newTdsAmount;
+    invoiceMaster.remainingGstAmount += newGstAmount;
+
+    const receivables = await Receivable.find({
+      leadId: existingInvoice.leadId,
+    });
+
+    const totalPaidReceivable = receivables
+      .filter((r) => r.paymentAgainst === "receivableAmount")
+      .reduce((sum, r) => sum + (r.paidAmount || 0), 0);
+
+    const totalPaidGst = receivables
+      .filter((r) => r.paymentAgainst === "gstAmount")
+      .reduce((sum, r) => sum + (r.paidAmount || 0), 0);
+
+    if (invoiceMaster.invoiceReceivableAmount < totalPaidReceivable) {
+      return next(
+        ErrorResponse.badRequest("Cannot reduce receivable below paid amount")
+      );
+    }
+
+    if (invoiceMaster.invoiceGstAmount < totalPaidGst) {
+      return next(
+        ErrorResponse.badRequest("Cannot reduce GST below paid amount")
+      );
+    }
+
+    if (invoiceMaster.remainingReceivableAmount < 0) {
+      return next(
+        ErrorResponse.badRequest("Remaining receivable cannot be negative")
+      );
+    }
+
+    if (invoiceMaster.remainingGstAmount < 0) {
+      return next(ErrorResponse.badRequest("Remaining GST cannot be negative"));
+    }
+
+    existingInvoice.updatedBy = employeeId;
+
+    await existingInvoice.save();
+    await invoiceMaster.save();
+
+    const invoicesOfLead = await Invoice.find({
+      leadId: existingInvoice.leadId,
+    });
+    const anyFinalTrue = invoicesOfLead.some(
+      (inv) => inv.finalInvoice === true
+    );
+
+    await Lead.findByIdAndUpdate(existingInvoice.leadId, {
+      finalInvoice: anyFinalTrue,
+    });
+
     return {
-      data: updatedInvoice,
+      data: existingInvoice,
       message: "Invoice updated successfully",
     };
   }
@@ -295,20 +526,60 @@ class InvoicesService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async deleteInvoice(req, res, next) {
-    const { id } = req.params;
+    const { id } = req.query;
 
     const invoice = await Invoice.findById(id);
     if (!invoice) {
       return next(ErrorResponse.notFound("Invoice not found"));
     }
 
-    if (invoice.finalInvoice === true && invoice.leadId) {
-      await Lead.findByIdAndUpdate(invoice.leadId, {
-        finalInvoice: false,
-      });
+    const invoiceMaster = await InvoiceMaster.findById(invoice.invoiceMasterId);
+    if (!invoiceMaster) {
+      return next(ErrorResponse.badRequest("Invoice master record not found"));
     }
 
-    await Invoice.findByIdAndDelete(id);
+    const receivableDiff = invoice.payoutAmount - invoice.tdsAmount;
+    const gstDiff = invoice.gstAmount || 0;
+
+    invoiceMaster.invoiceReceivableAmount = Math.max(
+      invoiceMaster.invoiceReceivableAmount - receivableDiff,
+      0
+    );
+    invoiceMaster.invoiceGstAmount = Math.max(
+      invoiceMaster.invoiceGstAmount - gstDiff,
+      0
+    );
+    invoiceMaster.remainingReceivableAmount = Math.max(
+      invoiceMaster.remainingReceivableAmount - receivableDiff,
+      0
+    );
+    invoiceMaster.remainingGstAmount = Math.max(
+      invoiceMaster.remainingGstAmount - gstDiff,
+      0
+    );
+
+    if (
+      invoiceMaster.invoiceReceivableAmount === 0 &&
+      invoiceMaster.invoiceGstAmount === 0 &&
+      invoiceMaster.remainingReceivableAmount === 0 &&
+      invoiceMaster.remainingGstAmount === 0
+    ) {
+      await invoiceMaster.deleteOne();
+    } else {
+      await invoiceMaster.save();
+    }
+
+    await invoice.deleteOne();
+
+    const hasOtherFinalInvoice = await Invoice.exists({
+      leadId: invoice.leadId,
+      finalInvoice: true,
+    });
+
+    if (!hasOtherFinalInvoice) {
+      await Lead.findByIdAndUpdate(invoice.leadId, { finalInvoice: false });
+    }
+
 
     return {
       message: "Invoice deleted successfully",

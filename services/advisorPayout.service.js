@@ -66,6 +66,37 @@ class AdvisorPayoutService {
 
     const employeeId = req.user.referenceId;
 
+    const numberFields = [
+      { name: "netPayableAmount", value: netReceivableAmount },
+      { name: "gstAmount", value: gstAmount },
+      { name: "payoutAmount", value: payoutAmount },
+      { name: "tdsAmount", value: tdsAmount },
+    ];
+
+    for (const field of numberFields) {
+      if (field.value != null && field.value < 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return next(
+          ErrorResponse.badRequest(`${field.name} cannot be negative`)
+        );
+      }
+    }
+
+    const percentFields = [
+      { name: "gstPercent", value: gstPercent },
+      { name: "payoutPercent", value: payoutPercent },
+      { name: "tdsPercent", value: tdsPercent },
+    ];
+
+    for (const field of percentFields) {
+      if (field.value != null && (field.value < 0 || field.value > 100)) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} must be between 0 and 100`)
+        );
+      }
+    }
+
     const lead = await Lead.findById(leadId);
     if (!lead) {
       return next(ErrorResponse.notFound("Lead not found"));
@@ -313,6 +344,34 @@ class AdvisorPayoutService {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
     }
 
+    const numberFields = [
+      { name: "netPayableAmount", value: req.body.netPayableAmount },
+      { name: "gstAmount", value: req.body.gstAmount },
+      { name: "payoutAmount", value: req.body.payoutAmount },
+      { name: "tdsAmount", value: req.body.tdsAmount },
+    ];
+
+    for (const field of numberFields) {
+      if (field.value != null && field.value < 0) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} cannot be negative`)
+        );
+      }
+    }
+
+    const percentFields = [
+      { name: "gstPercent", value: req.body.gstPercent },
+      { name: "payoutPercent", value: req.body.payoutPercent },
+      { name: "tdsPercent", value: req.body.tdsPercent },
+    ];
+    for (const field of percentFields) {
+      if (field.value != null && (field.value < 0 || field.value > 100)) {
+        return next(
+          ErrorResponse.badRequest(`${field.name} must be between 0 and 100`)
+        );
+      }
+    }
+
     const lead = await Lead.findById(existingPayout.leadId);
     if (!lead) {
       return next(ErrorResponse.notFound("Lead not found"));
@@ -340,6 +399,7 @@ class AdvisorPayoutService {
       invoiceDate,
       remarks,
       finalPayout,
+      processedById
     } = req.body;
 
     if (disbursalAmount !== undefined) {
@@ -348,6 +408,7 @@ class AdvisorPayoutService {
     if (disbursalDate !== undefined) {
       existingPayout.disbursalDate = disbursalDate;
     }
+    if(processedById !== undefined) existingPayout.processedById = processedById;
     if (invoiceNo !== undefined) existingPayout.invoiceNo = invoiceNo;
     if (invoiceDate !== undefined) existingPayout.invoiceDate = invoiceDate;
     if (remarks !== undefined) existingPayout.remarks = remarks;
@@ -415,8 +476,6 @@ class AdvisorPayoutService {
       0
     );
 
-    existingPayout.loanServiceType = lead.productType;
-    existingPayout.customerName = lead.clientName;
     existingPayout.updatedBy = req.user.referenceId;
 
     await existingPayout.save();
@@ -468,14 +527,5 @@ class AdvisorPayoutService {
     };
   }
 }
-
-// payables api =>
-
-// ek api bnaye ge jo ki frontend se lead id legi aur fir jin bhi advisor payout me vo leadId h unhe return kregi. is se hum ek lead k sbhi advisor payout find kr skte h.
-// ek api bnaye ge jo frontend se advisor ka name legi(advisor name same bhi ho skte h isliye uski id bhejegi) aur uski advisor payout ki details return kregi.
-// ek api bnaye ge jo ki 1 specific advisor payout k related  payables ko add/create kregi mtlab ki jab hum payables add/create krege toh usme advisor payout ki id store krege. jab hum payable create kr rhe hh toh hume advisor payout vale document me bhi amount ko update krna hoga.
-// ek api payables ko update krne ki hogi, same isme bhi hame advisor payout vale doocument me amount ko update krna hoga
-// ek api payables ko delete krne ki hogi, same isme bhi hame advisor payout vale doocument me amount ko update krna hoga
-// ek api sbhi payables ko fetch kregi.
 
 export default new AdvisorPayoutService();

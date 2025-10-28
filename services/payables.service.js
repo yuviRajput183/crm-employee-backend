@@ -12,6 +12,14 @@ class PayablesService {
    */
   async getLeadIdOfAllAdvisorPayouts(req, res, next) {
     const uniqueLeads = await AdvisorPayout.aggregate([
+      {
+        $match: {
+          $or: [
+            { remainingPayableAmount: { $gt: 0 } },
+            { remainingGstAmount: { $gt: 0 } },
+          ],
+        },
+      },
       { $group: { _id: "$leadId" } },
       {
         $lookup: {
@@ -253,10 +261,12 @@ class PayablesService {
     if (!payable) {
       return next(ErrorResponse.notFound("Payable not found"));
     }
-    if(!payable.payoutId) {
-      return next(ErrorResponse.notFound("Advisor Payout not found or deleted"));
+    if (!payable.payoutId) {
+      return next(
+        ErrorResponse.notFound("Advisor Payout not found or deleted")
+      );
     }
-    
+
     const advisorDisplayName = payable.advisorId
       ? payable.advisorId.advisorCode
         ? `${payable.advisorId.name} - ${payable.advisorId.advisorCode}`
@@ -371,26 +381,28 @@ class PayablesService {
    * deletePayable - Delete a payable and update the amounts into the advisor payout.
    * @param {Object} req - The HTTP request object.
    * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.  
+   * @param {Function} next - The next middleware function for error handling.
    */
   async deletePayable(req, res, next) {
     const { id } = req.body;
     const payable = await Payables.findById(id);
-    if(!payable) {
+    if (!payable) {
       return next(ErrorResponse.notFound("Payable not found"));
     }
 
     const advisorPayout = await AdvisorPayout.findById(payable.payoutId);
-    if(!advisorPayout) {
+    if (!advisorPayout) {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
     }
 
     const { paidAmount, paymentAgainst } = payable;
 
-    if(paymentAgainst === "payableAmount") {
-      advisorPayout.remainingPayableAmount = (advisorPayout.remainingPayableAmount || 0) + paidAmount;
-    } else if(paymentAgainst === "gstPayment") {
-      advisorPayout.remainingGstAmount = (advisorPayout.remainingGstAmount || 0) + paidAmount;
+    if (paymentAgainst === "payableAmount") {
+      advisorPayout.remainingPayableAmount =
+        (advisorPayout.remainingPayableAmount || 0) + paidAmount;
+    } else if (paymentAgainst === "gstPayment") {
+      advisorPayout.remainingGstAmount =
+        (advisorPayout.remainingGstAmount || 0) + paidAmount;
     }
 
     await advisorPayout.save();
@@ -399,9 +411,8 @@ class PayablesService {
 
     return {
       message: "Payable deleted successfully",
-    }
-
-  } 
+    };
+  }
 }
 
 export default new PayablesService();

@@ -2,23 +2,19 @@ import mongoose from "mongoose";
 
 const invoiceSchema = new mongoose.Schema(
   {
+    invoiceMasterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InvoiceMaster",
+      required: true,
+      description: "Stores the total of all the invoice of same lead"
+    },
     leadId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Lead",
       required: true,
     },
-    // advisorId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Advisor",
-    //   required: true,
-    // },
-    // customerName: String,
-    // loanServiceType: String,
 
-    // disbursalAmount: {
-    //   type: Number,
-    //   required: true,
-    // },
+    disbursalAmount: Number,
     disbursalDate: Date,
 
     payoutPercent: {
@@ -27,11 +23,27 @@ const invoiceSchema = new mongoose.Schema(
     },
     payoutAmount: Number,
 
-    tdsPercent: Number,
-    tdsAmount: Number,
+    tdsPercent: {
+      type: Number,
+      default: 0,
+      min: [0, "TDS Percentage should be between 0 and 100"],
+      max: [100, "TDS Percentage should be between 0 and 100"]
+    },
+    tdsAmount: {
+      type: Number,
+      default: 0
+    },
 
-    gstPercent: Number,
-    gstAmount: Number,
+    gstPercent: {
+      type: Number,
+      default: 0,
+      min: [0, "GST Percentage should be between 0 and 100"],
+      max: [100, "GST Percentage should be between 0 and 100"]
+    },
+    gstAmount: {
+      type: Number,
+      default: 0
+    },
 
     invoiceNo: {
       type: String,
@@ -54,18 +66,6 @@ const invoiceSchema = new mongoose.Schema(
       default: false,
     },
     remarks: String,
-
-    bankerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Banker",
-    },
-    bankName: String,
-    bankerName: String,
-    bankerEmailId: String,
-    bankerDesignation: String,
-    bankerMobileNo: String,
-    stateName: String,
-    cityName: String,
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
