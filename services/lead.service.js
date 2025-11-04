@@ -5,6 +5,8 @@ import moment from "moment";
 import helperService from "./helper.service.js";
 import Advisor from "../models/Advisor.model.js";
 import Banker from "../models/banker.model.js";
+import path from "path";
+import fs from "fs";
 
 class LeadService {
   /**
@@ -677,6 +679,115 @@ class LeadService {
     return {
       data: customers,
       message: "Customers retrieved successfully",
+    };
+  }
+
+  /**
+   * getAllLeads - Super admin and admin can fetch all leads.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getAllLeads(req, res, next) {
+    const {
+      productType,
+      feedback,
+      advisorName,
+      fromDate,
+      toDate,
+      page = 1,
+      limit = 100
+    } = req.query;
+
+    const parsedPage = parseInt(page, 10);
+    const parsedLimit = parseInt(limit, 10);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const filters = {};
+
+    if(productType) {
+      filters.productType = {
+        $regex: productType,
+        $options: "i"
+      }
+    }
+
+    if(fromDate || toDate){
+      filters.createdAt = {};
+      if (fromDate) filters.createdAt.$gte = new Date(fromDate);
+      if(toDate) filters.createdAt.$lte = new Date(toDate);
+    }
+
+    let leads = await Lead.find(filters)
+      .populate("advisorId")
+      .populate("allocatedTo")
+      .sort({ createdAt: -1 });
+
+    if(feedback) {
+      leads = leads.filter((lead) => {
+        const lastHistory = lead.history?.[lead.history.length - 1];
+        return (
+          lastHistory?.feedback?.toLowerCase() === feedback.toLowerCase()
+        )
+      })
+    }
+
+    if(advisorName) {
+      leads = leads.filter((lead) => {
+        return lead.advisorId?.name?.toLowerCase().includes(advisorName.toLowerCase());
+      })
+    }
+
+    const paginatedLeads = leads.slice(skip, skip + parsedLimit);
+
+    const totalCount = leads.length;
+    const totalPages = Math.ceil(totalCount / parsedLimit);
+
+    return {
+      data: {
+        total: totalCount,
+        currentPage: parsedPage,
+        totalPages: totalPages,
+        leads: paginatedLeads,
+      },
+      message: "Leads retrieved successfully",
+    };
+  }
+
+  /**
+   * deleteAllLeadAttachments - Delete all attachments associated with a lead.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async deleteAllLeadAttachments(req, res, next) {
+    const { leadId } = req.body;
+
+    if(!leadId) {
+      return next(ErrorResponse.badRequest("Lead id is required"));
+    }
+
+    const lead = await Lead.findById(leadId);
+    if(!lead) {
+      return next(ErrorResponse.notFound("Lead not found"));
+    }
+
+    if(lead.documents && lead.documents.length > 0) {
+      lead.documents.forEach(doc => {
+        const filePath = path.join(process.cwd(), doc.fileUrl);
+
+        if(fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      })
+    }
+
+    lead.documents = [];
+    await lead.save();
+
+    return {
+      data: lead,
+      message: "Lead attachments deleted successfully",
     };
   }
 }

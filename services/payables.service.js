@@ -93,15 +93,15 @@ class PayablesService {
 
     try {
       if (paidAmount < 0)
-        throw ErrorResponse.badRequest("Paid amount cannot be negative");
+        return next(ErrorResponse.badRequest("Paid amount cannot be negative"));
 
       if (!["payableAmount", "gstPayment"].includes(paymentAgainst))
-        throw ErrorResponse.badRequest("Invalid paymentAgainst value");
+        return next(ErrorResponse.badRequest("Invalid paymentAgainst value"));
 
       const employeeId = req.user.referenceId;
 
       const payout = await AdvisorPayout.findById(payoutId).session(session);
-      if (!payout) throw ErrorResponse.notFound("Advisor Payout not found");
+      if (!payout) return next(ErrorResponse.notFound("Advisor Payout not found"));
 
       const balanceAmountCalc =
         balanceAmount !== undefined
@@ -109,9 +109,7 @@ class PayablesService {
           : payableAmount - paidAmount;
 
       if (balanceAmountCalc < 0)
-        throw ErrorResponse.badRequest(
-          "Paid amount cannot exceed payable amount"
-        );
+        return next(ErrorResponse.badRequest("Paid amount cannot exceed payable amount"));
 
       // const totalPaidAmountAfter = (payout.totalPaidAmount || 0) + paidAmount;
       // if (totalPaidAmountAfter > payout.netPayableAmount) {
@@ -162,7 +160,7 @@ class PayablesService {
       };
     } catch (error) {
       await session.abortTransaction();
-      throw error;
+      return next(ErrorResponse.internalServer(error.message));
     } finally {
       session.endSession();
     }
@@ -341,7 +339,8 @@ class PayablesService {
 
       payable.paidAmount = paidAmount;
       payable.balanceAmount = Math.max(
-        (payable.payableAmount || 0) - (paidAmount || 0)
+        (payable.payableAmount || 0) - (paidAmount || 0),
+        0
       );
 
       if (payable.paymentAgainst === "payableAmount") {

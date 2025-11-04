@@ -1,5 +1,5 @@
 import express from "express";
-import { addLead, bankerCitiesByStateName, editLead, editLeadAdvisor, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getSignleLead } from "../controller/lead.controller.js";
+import { addLead, bankerCitiesByStateName, deleteAllLeadAttachments, editLead, editLeadAdvisor, getAllLeads, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getSignleLead } from "../controller/lead.controller.js";
 import { uploadDocument } from "../middlewares/documentUpload.js";
 import { authenticate, isAdminDepartment } from "../middlewares/verifyayth.middleware.js";
 
@@ -22,7 +22,9 @@ router.get("/all-my-leads", authenticate, isAdminDepartment, getAllMyLeads);
 
 router.get("/customers-by-advisorId", authenticate, isAdminDepartment, getCustomersName);
 
+router.get("/all-leads", authenticate, isAdminDepartment, getAllLeads);
 
+router.delete("/attachments", authenticate, isAdminDepartment, deleteAllLeadAttachments);
 
 
 export default router;

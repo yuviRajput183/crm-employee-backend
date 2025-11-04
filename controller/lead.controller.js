@@ -32,6 +32,12 @@ export const addLead = async (req, res, next) => {
   }
 };
 
+/**
+ * getAllLeads - Super admin and admin can fetch all leads.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.  
+ */
 export const getAllLeads = async (req, res, next) => {
   try {
     const data = await leadService.getAllLeads(req, res, next);
@@ -239,6 +245,29 @@ export const getAllMyLeads = async (req, res, next) => {
 export const getCustomersName = async (req, res, next) => {
   try {
     const data = await leadService.getCustomersName(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * deleteAllLeadAttachments - Delete all attachments associated with a lead.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const deleteAllLeadAttachments = async (req, res, next) => {
+  const requiredFields = ["leadId"];
+  const missingFields = helperService.validateFields(requiredFields, req.body);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.deleteAllLeadAttachments(req, res, next);
     if (data && data.data)
       return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
