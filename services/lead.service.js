@@ -221,10 +221,7 @@ class LeadService {
     if (lead.bankerId) {
       lead = await lead.populate({
         path: "bankerId",
-        populate: [
-          { path: "bank" },
-          { path: "city" },
-        ],
+        populate: [{ path: "bank" }, { path: "city" }],
       });
     }
     return {
@@ -427,12 +424,12 @@ class LeadService {
     }
 
     const lead = await Lead.findById(leadId).select("productType");
-    if(!lead){
+    if (!lead) {
       return next(ErrorResponse.notFound("Lead not found"));
     }
 
     const leadType = lead.productType?.trim();
-    if(!leadType){
+    if (!leadType) {
       return next(ErrorResponse.badRequest("Lead type is required"));
     }
 
@@ -696,7 +693,7 @@ class LeadService {
       fromDate,
       toDate,
       page = 1,
-      limit = 100
+      limit = 100,
     } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -705,17 +702,17 @@ class LeadService {
 
     const filters = {};
 
-    if(productType) {
+    if (productType) {
       filters.productType = {
         $regex: productType,
-        $options: "i"
-      }
+        $options: "i",
+      };
     }
 
-    if(fromDate || toDate){
+    if (fromDate || toDate) {
       filters.createdAt = {};
       if (fromDate) filters.createdAt.$gte = new Date(fromDate);
-      if(toDate) filters.createdAt.$lte = new Date(toDate);
+      if (toDate) filters.createdAt.$lte = new Date(toDate);
     }
 
     let leads = await Lead.find(filters)
@@ -723,19 +720,19 @@ class LeadService {
       .populate("allocatedTo")
       .sort({ createdAt: -1 });
 
-    if(feedback) {
+    if (feedback) {
       leads = leads.filter((lead) => {
         const lastHistory = lead.history?.[lead.history.length - 1];
-        return (
-          lastHistory?.feedback?.toLowerCase() === feedback.toLowerCase()
-        )
-      })
+        return lastHistory?.feedback?.toLowerCase() === feedback.toLowerCase();
+      });
     }
 
-    if(advisorName) {
+    if (advisorName) {
       leads = leads.filter((lead) => {
-        return lead.advisorId?.name?.toLowerCase().includes(advisorName.toLowerCase());
-      })
+        return lead.advisorId?.name
+          ?.toLowerCase()
+          .includes(advisorName.toLowerCase());
+      });
     }
 
     const paginatedLeads = leads.slice(skip, skip + parsedLimit);
@@ -761,33 +758,37 @@ class LeadService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async deleteAllLeadAttachments(req, res, next) {
-    const { leadId } = req.body;
+    const { leadIds } = req.body;
 
-    if(!leadId) {
-      return next(ErrorResponse.badRequest("Lead id is required"));
+    if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return next(ErrorResponse.badRequest("leadIds array is required"));
     }
 
-    const lead = await Lead.findById(leadId);
-    if(!lead) {
-      return next(ErrorResponse.notFound("Lead not found"));
+    const leads = await Lead.find({ _id: { $in: leadIds } });
+
+    if (!leads || leads.length === 0) {
+      return next(ErrorResponse.notFound("No leads found for the given IDs"));
     }
 
-    if(lead.documents && lead.documents.length > 0) {
-      lead.documents.forEach(doc => {
-        const filePath = path.join(process.cwd(), doc.fileUrl);
+    for (const lead of leads) {
+      if (lead.documents && lead.documents.length > 0) {
+        for (const doc of lead.documents) {
+          const filePath = path.join(process.cwd(), doc.fileUrl);
 
-        if(fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
         }
-      })
-    }
+      }
 
-    lead.documents = [];
-    await lead.save();
+      lead.documents = [];
+      await lead.save();
+    }
 
     return {
-      data: lead,
-      message: "Lead attachments deleted successfully",
+      data: leads,
+      message:
+        "All attached documents deleted successfully from selected leads",
     };
   }
 }

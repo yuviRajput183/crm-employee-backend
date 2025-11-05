@@ -259,7 +259,7 @@ export const getCustomersName = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.
  */
 export const deleteAllLeadAttachments = async (req, res, next) => {
-  const requiredFields = ["leadId"];
+  const requiredFields = ["leadIds"];
   const missingFields = helperService.validateFields(requiredFields, req.body);
 
   if (missingFields.length > 0) {
