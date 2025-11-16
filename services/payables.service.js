@@ -205,6 +205,7 @@ class PayablesService {
 
     const payables = await Payables.find(filters)
       .populate("advisorId")
+      .populate("leadId")
       .sort({ createdAt: -1 });
 
     const filteredPayables = payables.filter((payable) => {
