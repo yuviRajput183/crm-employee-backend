@@ -74,6 +74,10 @@ class LeadService {
       ];
     }
 
+    if (employee.role?.toLowerCase() === "employee") {
+      data.allocatedTo = employee._id;
+    }
+
     data.createdBy = employee._id;
 
     const newLead = await Lead.create(data);
@@ -126,7 +130,15 @@ class LeadService {
       };
     }
 
-    if (allocatedTo) {
+    // if (allocatedTo) {
+    //   filters.allocatedTo = allocatedTo;
+    // }
+
+    if(req.user.role === "employee") {
+      filters.allocatedTo = req.user.referenceId;
+    }
+
+    if(req.user.role === "admin" && allocatedTo) {
       filters.allocatedTo = allocatedTo;
     }
 
@@ -569,7 +581,15 @@ class LeadService {
       };
     }
 
-    if (allocatedTo) {
+    // if (allocatedTo) {
+    //   filters.allocatedTo = allocatedTo;
+    // }
+
+    if(req.user.role === "employee") {
+      filters.allocatedTo = req.user.referenceId;
+    }
+
+    if(req.user.role === "admin" && allocatedTo) {
       filters.allocatedTo = allocatedTo;
     }
 

@@ -585,6 +585,137 @@ class InvoicesService {
       message: "Invoice deleted successfully",
     };
   }
+
+  async myPerformance(req, res, next) {
+    const userId = req.user.referenceId;
+
+    const {
+      productType,
+      bankName,
+      fromDate,
+      toDate,
+    } = req.query;
+
+    // Dynamic match conditions
+    const leadMatch = {
+      "lead.allocatedTo": userId,
+    };
+
+    if (productType) {
+      leadMatch["lead.productType"] = productType;
+    }
+
+    const invoiceDateMatch = {};
+    if (fromDate) {
+      invoiceDateMatch.$gte = new Date(fromDate);
+    }
+    if (toDate) {
+      invoiceDateMatch.$lte = new Date(toDate);
+    }
+
+    const invoiceMatch =
+      Object.keys(invoiceDateMatch).length > 0
+        ? { disbursalDate: invoiceDateMatch }
+        : {};
+
+    const bankMatch = {};
+    if (bankName) {
+      bankMatch["bank.name"] = bankName;
+    }
+
+    const result = await Invoice.aggregate([
+      // Invoice Date Filter
+      ...(Object.keys(invoiceMatch).length
+        ? [{ $match: invoiceMatch }]
+        : []),
+
+      // Join Lead
+      {
+        $lookup: {
+          from: "leads",
+          localField: "leadId",
+          foreignField: "_id",
+          as: "lead",
+        },
+      },
+      { $unwind: "$lead" },
+
+      // Lead Filters
+      {
+        $match: leadMatch,
+      },
+
+      // Join Banker
+      {
+        $lookup: {
+          from: "bankers",
+          localField: "lead.bankerId",
+          foreignField: "_id",
+          as: "banker",
+        },
+      },
+      { $unwind: "$banker" },
+
+      // Join Bank
+      {
+        $lookup: {
+          from: "banks",
+          localField: "banker.bank",
+          foreignField: "_id",
+          as: "bank",
+        },
+      },
+      { $unwind: "$bank" },
+
+      // Bank Filter
+      ...(Object.keys(bankMatch).length
+        ? [{ $match: bankMatch }]
+        : []),
+
+      // Final Projection
+      {
+        $project: {
+          leadNo: "$lead.leadNo",
+          loanType: "$lead.productType",
+          customerName: "$lead.clientName",
+          bankName: "$bank.name",
+          disbursalAmount: 1,
+          disbursalDate: 1,
+          month: {
+            $dateToString: {
+              format: "%b %Y",
+              date: "$disbursalDate",
+            },
+          },
+        },
+      },
+
+      // Total Calculation
+      {
+        $group: {
+          _id: null,
+          records: { $push: "$$ROOT" },
+          totalDisbursalAmount: { $sum: "$disbursalAmount" },
+        },
+      },
+
+      {
+        $project: {
+          _id: 0,
+          records: 1,
+          totalDisbursalAmount: 1,
+        },
+      },
+    ]);
+
+    return {
+      data: result[0] || {
+          records: [],
+          totalDisbursalAmount: 0,
+        },
+      message: "My Performance data retrieved successfully",
+    };
+  }
 }
 
 export default new InvoicesService();

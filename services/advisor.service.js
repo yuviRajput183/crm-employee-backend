@@ -400,11 +400,9 @@ class AdvisorService {
           "name _id"
         );
       } else {
-        // Normal Employee: find the admin who created him
-        const reportingOfficer = await Employee.findById(user.reportingOfficer);
-        if (!reportingOfficer) return next(ErrorResponse.notFound("Reporting Officer not found"));
+        // Normal Employee: Get all the advisors whose reporting officer is same as reporting officer of the logged in employee.
 
-        advisors = await Advisor.find({ createdBy: reportingOfficer._id, isActive: true }).select("name _id");
+        advisors = await Advisor.find({ reportingOfficer: user.reportingOfficer, isActive: true }).select("name _id");
       }
     }
 
