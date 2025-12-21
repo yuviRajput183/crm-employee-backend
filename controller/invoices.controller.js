@@ -112,11 +112,27 @@ export const deleteInvoice = async (req, res, next) => {
  * @param {Object} res - The HTTP response object.
  * @param {Function} next - The next middleware function for error handling.    
  */
-export const myPerformance = async (req, res, next) => {
+export const employeePerformance = async (req, res, next) => {
     try {
-        const data = await invoicesService.myPerformance(req, res, next);
+        const data = await invoicesService.employeePerformance(req, res, next);
         if( data ) 
-            return SuccessResponse.ok(res, data.message);
+            return SuccessResponse.ok(res, data.message, data.data);
+    } catch (error) {
+        return next(ErrorResponse.internalServer(error.message));
+    }
+}
+
+/**
+ * myPerformance - Normal employee watch his invoices.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.    
+ */
+export const advisorPerformance = async (req, res, next) => {
+    try {
+        const data = await invoicesService.advisorPerformance(req, res, next);
+        if( data ) 
+            return SuccessResponse.ok(res, data.message, data.data);
     } catch (error) {
         return next(ErrorResponse.internalServer(error.message));
     }

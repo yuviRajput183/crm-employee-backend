@@ -7,6 +7,7 @@ import Advisor from "../models/Advisor.model.js";
 import Banker from "../models/banker.model.js";
 import path from "path";
 import fs from "fs";
+import Draft from "../models/Draft.model.js";
 
 class LeadService {
   /**
@@ -32,10 +33,6 @@ class LeadService {
 
     const leadNo = await helperService.getNextSequence("leadSerial");
     data.leadNo = leadNo;
-
-    if (employee.role?.toLowerCase() === "employee") {
-      data.allocatedTo = employee._id;
-    }
 
     if (data.runningLoans) {
       try {
@@ -133,12 +130,13 @@ class LeadService {
     // if (allocatedTo) {
     //   filters.allocatedTo = allocatedTo;
     // }
+    const user = await Employee.findById(req.user.referenceId);
 
-    if(req.user.role === "employee") {
+    if (user.role === "employee") {
       filters.allocatedTo = req.user.referenceId;
     }
 
-    if(req.user.role === "admin" && allocatedTo) {
+    if (user.role === "admin" && allocatedTo) {
       filters.allocatedTo = allocatedTo;
     }
 
@@ -584,12 +582,13 @@ class LeadService {
     // if (allocatedTo) {
     //   filters.allocatedTo = allocatedTo;
     // }
+    const user = await Employee.findById(req.user.referenceId);
 
-    if(req.user.role === "employee") {
+    if (user.role === "employee") {
       filters.allocatedTo = req.user.referenceId;
     }
 
-    if(req.user.role === "admin" && allocatedTo) {
+    if (user.role === "admin" && allocatedTo) {
       filters.allocatedTo = allocatedTo;
     }
 
@@ -809,6 +808,273 @@ class LeadService {
       data: leads,
       message:
         "All attached documents deleted successfully from selected leads",
+    };
+  }
+
+  /**
+   * addDraft - Advisor can add a draft lead.
+   * @param {body(productType, loanRequirementAmount, clientName, mobileNo, emailId, dob, panNo, aadharNo, maritalStatus, spouseName, motherName, otherContactNo, qualification, residenceType, residentialAddress, residentialAddressTakenFrom, residentialStability, stateName, cityName, pinCode, companyName, designation, companyAddress, netSalary, salaryTransferMode, jobPeriod, totalJobExperience, officialEmailId, officialNumber, noOfDependent, creditCardOutstandingAmount, runningLoans, references, documents, history, password, allocatedTo)} req - The request body.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async addDraft(req, res, next) {
+    const data = { ...req.body };
+
+    const advisor = await Advisor.findById(req.user.referenceId);
+
+    if (!advisor) {
+      return next(ErrorResponse.notFound("Advisor not found"));
+    }
+
+    if (data.runningLoans) {
+      try {
+        data.runningLoans = JSON.parse(data.runningLoans);
+      } catch (err) {
+        return next(ErrorResponse.badRequest("Invalid JSON in runningLoans"));
+      }
+    }
+
+    if (data.references) {
+      try {
+        data.references = JSON.parse(data.references);
+      } catch (err) {
+        return next(ErrorResponse.badRequest("Invalid JSON in references"));
+      }
+    }
+
+    if (req.file) {
+      data.documents = [
+        {
+          attachmentType: data.attachmentType || "Document",
+          fileUrl: req.file.path,
+          password: data.password || null,
+        },
+      ];
+    }
+
+    data.advisorId = advisor._id;
+    data.createdBy = advisor._id;
+
+    const newDraft = await Draft.create(data);
+
+    return {
+      data: newDraft,
+      message: "Draft created successfully",
+    };
+  }
+
+  /**
+   * getAllDrafts - Get all the drafts of the logged in advisor.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getAllDrafts(req, res, next) {
+    const { search } = req.query;
+
+    const query = {
+      advisorId: req.user.referenceId,
+    };
+
+    if (search) {
+      query.$or = [
+        { clientName: { $regex: search, $options: "i" } },
+        { productType: { $regex: search, $options: "i" } },
+        { mobileNo: { $regex: search, $options: "i" } },
+        { emailId: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const drafts = await Draft.find(query).sort({ createdAt: -1 });
+
+    return {
+      data: drafts,
+      message: "Advisor drafts retrieved successfully",
+    };
+  }
+
+  /**
+   * getSignleDraft - Get a single draft of the logged in advisor.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getSignleDraft(req, res, next) {
+    const draftId = req.params.draftId;
+    let draft = await Draft.findById(draftId).populate("advisorId", "_id name");
+
+    if (!draft) {
+      return next(ErrorResponse.notFound("Draft not found"));
+    }
+
+    return {
+      data: draft,
+      message: "Draft retrieved successfully",
+    };
+  }
+
+  /**
+   * addLead - Add a new lead. Admin or Super admin send the employeeId in allocatedTo field. If the logged in user is employee, allocatedTo field is set to the id of logged in employee. Add the advisorId in the advisor field.
+   * @param {body(productType, loanRequirementAmount, clientName, mobileNo, emailId, dob, panNo, aadharNo, maritalStatus, spouseName, motherName, otherContactNo, qualification, residenceType, residentialAddress, residentialAddressTakenFrom, residentialStability, stateName, cityName, pinCode, companyName, designation, companyAddress, netSalary, salaryTransferMode, jobPeriod, totalJobExperience, officialEmailId, officialNumber, noOfDependent, creditCardOutstandingAmount, runningLoans, references, documents, history, password, allocatedTo)} req - The request body.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async advisorLead(req, res, next) {
+    const data = { ...req.body };
+
+    const advisor = await Advisor.findById(req.user.referenceId);
+    if (!advisor) {
+      return next(ErrorResponse.notFound("Advisor not found"));
+    }
+    const leadNo = await helperService.getNextSequence("leadSerial");
+    data.leadNo = leadNo;
+    if (data.runningLoans) {
+      try {
+        data.runningLoans = JSON.parse(data.runningLoans);
+      } catch (err) {
+        return next(ErrorResponse.badRequest("Invalid JSON in runningLoans"));
+      }
+    }
+    if (data.references) {
+      try {
+        data.references = JSON.parse(data.references);
+      } catch (err) {
+        return next(ErrorResponse.badRequest("Invalid JSON in references"));
+      }
+    }
+    data.history = [
+      {
+        feedback: data.feedback || "Allocated",
+        commentBy: advisor.name,
+        commentDate: moment().format("DD/MM/YYYY-hh:mm A"),
+        remarks: "",
+        replyDate: "",
+        advisorReply: "",
+      },
+    ];
+    
+    if (req.file) {
+      data.documents = [
+        {
+          attachmentType: data.attachmentType || "Document",
+          fileUrl: req.file.path,
+          password: data.password || null,
+        },
+      ];
+    }
+
+    data.allocatedTo = null;
+    data.advisorId = advisor._id;
+    data.createdBy = advisor._id;
+
+    const newLead = await Lead.create(data);
+
+    return {
+      data: newLead,
+      message: "Lead created successfully",
+    };
+  }
+
+  /**
+   * getAllMyLeads - Super admin and admin can fetch all my leads and their stats.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getAdvisorLeads(req, res, next) {
+    const {
+      productType,
+      feedback,
+      fromDate,
+      toDate,
+      search, // Added search parameter
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    const parsedPage = parseInt(page);
+    const parsedLimit = parseInt(limit);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    // 1. Core Security Filter: Only leads created by/for this advisor
+    const filters = {
+      advisorId: req.user.referenceId,
+    };
+
+    // 2. Date Range Filters
+    if (fromDate || toDate) {
+      filters.createdAt = {};
+      if (fromDate) filters.createdAt.$gte = new Date(fromDate);
+      if (toDate) filters.createdAt.$lte = new Date(toDate);
+    }
+
+    // 4. Product Type Filter
+    if (productType) {
+      filters.productType = { $regex: productType, $options: "i" };
+    }
+
+    // Execute Query
+    const leads = await Lead.find(filters)
+      .populate("advisorId")
+      .populate("allocatedTo")
+      .sort({ createdAt: -1 });
+
+    // 5. Feedback Filtering (Last History State)
+    const validFeedbacks = [
+      "Loan Disbursed",
+      "Policy Issued",
+      "Invoice Raised",
+      "Loan Rejected",
+      "Allocated",
+      "Docs Query",
+      "Approved",
+      "Under Process",
+    ];
+    const filteredLeads = leads.filter((lead) => {
+      const lastHistory = lead.history?.[lead.history.length - 1];
+      if (!lastHistory) return false;
+      const isSystemFeedback = validFeedbacks.includes(lastHistory.feedback);
+      const matchesFeedbackQuery = feedback
+        ? lastHistory.feedback.toLowerCase() === feedback.toLowerCase()
+        : true;
+
+      return isSystemFeedback && matchesFeedbackQuery;
+    });
+
+    // 6. Statistics Calculation
+    const totalLeads = filteredLeads.length;
+    const feedbackStats = {};
+    validFeedbacks.forEach((f) => (feedbackStats[f] = 0));
+
+    filteredLeads.forEach((lead) => {
+      const lastHistory = lead.history?.[lead.history.length - 1];
+      if (lastHistory && feedbackStats.hasOwnProperty(lastHistory.feedback)) {
+        feedbackStats[lastHistory.feedback]++;
+      }
+    });
+
+    const percentageStats = {};
+    Object.keys(feedbackStats).forEach((key) => {
+      const count = feedbackStats[key];
+      percentageStats[key] = {
+        count,
+        percentage:
+          totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(2) + "%" : "0%",
+      };
+    });
+
+    // 7. Manual Pagination (since we filtered in JS memory)
+    const paginatedLeads = filteredLeads.slice(skip, skip + parsedLimit);
+
+    return {
+      data: {
+        total: totalLeads,
+        currentPage: parsedPage,
+        totalPages: Math.ceil(totalLeads / parsedLimit),
+        leads: paginatedLeads,
+        stats: percentageStats,
+      },
+      message: "Advisor leads retrieved successfully",
     };
   }
 }

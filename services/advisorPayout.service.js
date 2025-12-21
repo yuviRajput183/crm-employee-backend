@@ -55,7 +55,7 @@ class AdvisorPayoutService {
       tdsAmount,
       gstApplicable,
       gstPercent,
-      // gstAmount,
+      gstAmount,
       invoiceNo,
       invoiceDate,
       netPayableAmount,
@@ -67,7 +67,7 @@ class AdvisorPayoutService {
     const employeeId = req.user.referenceId;
 
     const numberFields = [
-      { name: "netPayableAmount", value: netReceivableAmount },
+      { name: "netPayableAmount", value: netPayableAmount },
       { name: "gstAmount", value: gstAmount },
       { name: "payoutAmount", value: payoutAmount },
       { name: "tdsAmount", value: tdsAmount },

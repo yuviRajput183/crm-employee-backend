@@ -101,7 +101,8 @@ class PayablesService {
       const employeeId = req.user.referenceId;
 
       const payout = await AdvisorPayout.findById(payoutId).session(session);
-      if (!payout) return next(ErrorResponse.notFound("Advisor Payout not found"));
+      if (!payout)
+        return next(ErrorResponse.notFound("Advisor Payout not found"));
 
       const balanceAmountCalc =
         balanceAmount !== undefined
@@ -109,7 +110,9 @@ class PayablesService {
           : payableAmount - paidAmount;
 
       if (balanceAmountCalc < 0)
-        return next(ErrorResponse.badRequest("Paid amount cannot exceed payable amount"));
+        return next(
+          ErrorResponse.badRequest("Paid amount cannot exceed payable amount")
+        );
 
       // const totalPaidAmountAfter = (payout.totalPaidAmount || 0) + paidAmount;
       // if (totalPaidAmountAfter > payout.netPayableAmount) {
@@ -411,6 +414,89 @@ class PayablesService {
 
     return {
       message: "Payable deleted successfully",
+    };
+  }
+
+  // ADVISOR PANEL
+
+  /**
+   * getAdvisorPayout - Get all advisor payout details of the logged-in advisor.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getAdvisorPayout(req, res, next) {
+    const {
+      productType,
+      paymentStatus,
+      fromDate,
+      toDate,
+      page = 1,
+      limit = 1000,
+    } = req.query;
+
+    const parsedPage = parseInt(page, 10);
+    const parsedLimit = parseInt(limit, 10);
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const filters = {
+      advisorId: req.user.referenceId,
+    };
+    if (fromDate || toDate) {
+      filters.createdAt = {};
+      if (fromDate) filters.createdAt.$gte = new Date(fromDate);
+      if (toDate) filters.createdAt.$lte = new Date(toDate);
+    }
+
+    const payables = await Payables.find(filters)
+      .populate("advisorId")
+      .populate("leadId")
+      .sort({ createdAt: -1 });
+    let processedPayables = payables.map((p) => {
+      const payableObj = p.toObject();
+
+      payableObj.status =
+        payableObj.payableAmount > payableObj.paidAmount ? "Pending" : "Paid";
+
+      return payableObj;
+    });
+
+    if (productType) {
+      processedPayables = processedPayables.filter((p) =>
+        p.leadId?.productType?.toLowerCase().includes(productType.toLowerCase())
+      );
+    }
+
+    if (paymentStatus) {
+      processedPayables = processedPayables.filter(
+        (p) => p.status.toLowerCase() === paymentStatus.toLowerCase()
+      );
+    }
+
+    const stats = processedPayables.reduce(
+      (acc, curr) => {
+        acc.totalDisbursal += curr.leadId?.loanRequirementAmount || 0;
+        acc.totalPayout += curr.payableAmount || 0;
+        acc.paidAmount += curr.paidAmount || 0;
+        acc.pendingAmount += curr.payableAmount - curr.paidAmount;
+        return acc;
+      },
+      { totalDisbursal: 0, totalPayout: 0, paidAmount: 0, pendingAmount: 0 }
+    );
+
+    const totalCount = processedPayables.length;
+    const paginatedData = processedPayables.slice(skip, skip + parsedLimit);
+
+    return {
+      data: {
+        stats, 
+        totalCount,
+        totalPages: Math.ceil(totalCount / parsedLimit) || 1,
+        page: parsedPage,
+        limit: parsedLimit,
+        payables: paginatedData,
+      },
+      message: "Advisor payouts retrieved successfully",
     };
   }
 }

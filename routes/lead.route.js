@@ -1,5 +1,5 @@
 import express from "express";
-import { addLead, bankerCitiesByStateName, deleteAllLeadAttachments, editLead, editLeadAdvisor, getAllLeads, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getSignleLead } from "../controller/lead.controller.js";
+import { addDraft, addLead, advisorLead, bankerCitiesByStateName, deleteAllLeadAttachments, editLead, editLeadAdvisor, getAdvisorLeads, getAllDrafts, getAllLeads, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getSignleDraft, getSignleLead } from "../controller/lead.controller.js";
 import { uploadDocument } from "../middlewares/documentUpload.js";
 import { authenticate, isAdminDepartment } from "../middlewares/verifyayth.middleware.js";
 
@@ -26,5 +26,14 @@ router.get("/all-leads", authenticate, isAdminDepartment, getAllLeads);
 
 router.delete("/attachments", authenticate, isAdminDepartment, deleteAllLeadAttachments);
 
+
+// advisor
+router.post("/add-draft", authenticate, uploadDocument, addDraft);
+router.get("/all-drafts", authenticate, getAllDrafts); 
+router.get("/single-draft/:draftId", authenticate, getSignleDraft);
+
+router.post("/add-advisor-lead",authenticate,uploadDocument, advisorLead);
+
+router.get("/advisor-my-leads", authenticate, getAdvisorLeads);
 
 export default router;

@@ -274,3 +274,110 @@ export const deleteAllLeadAttachments = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 };
+
+// ADVISOR CONTROLLERS
+
+/**
+ * addDraft - Advisor can add a draft lead.
+ * @param {body(productType, loanRequirementAmount, clientName, mobileNo, emailId, dob, panNo, aadharNo, maritalStatus, spouseName, motherName, otherContactNo, qualification, residenceType, residentialAddress, residentialAddressTakenFrom, residentialStability, stateName, cityName, pinCode, companyName, designation, companyAddress, netSalary, salaryTransferMode, jobPeriod, totalJobExperience, officialEmailId, officialNumber, noOfDependent, creditCardOutstandingAmount, runningLoans, references, documents, history, password, allocatedTo)} req - The request body.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const addDraft = async (req, res, next) => {
+  const requiredFields = [
+    "clientName",
+    "mobileNo",
+    "productType",
+    // "loanRequirementAmount"
+  ];
+  const missingFields = helperService.validateFields(requiredFields, req.body);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.addDraft(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.created(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * getSignleLead - Fetch a single lead on the basis of the leadId.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getSignleDraft = async (req, res, next) => {
+  try {
+    const data = await leadService.getSignleDraft(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * getAllNewLeads - Super admin and admin can fetch all new leads and their stats.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getAllDrafts = async (req, res, next) => {
+  try {
+    const data = await leadService.getAllDrafts(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * advisorLead - Add a new lead. Admin or Super admin send the employeeId in allocatedTo field. If the logged in user is employee, allocatedTo field is set to the id of logged in employee.
+ * @param {body(productType, loanRequirementAmount, clientName, mobileNo, emailId, dob, panNo, aadharNo, maritalStatus, spouseName, motherName, otherContactNo, qualification, residenceType, residentialAddress, residentialAddressTakenFrom, residentialStability, stateName, cityName, pinCode, companyName, designation, companyAddress, netSalary, salaryTransferMode, jobPeriod, totalJobExperience, officialEmailId, officialNumber, noOfDependent, creditCardOutstandingAmount, runningLoans, references, documents, history, password, allocatedTo)} req - The request body.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const advisorLead = async (req, res, next) => {
+  console.log("-1")
+  const requiredFields = [
+    "clientName",
+    "mobileNo",
+    "productType",
+    // "loanRequirementAmount"
+  ];
+  const missingFields = helperService.validateFields(requiredFields, req.body);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await leadService.advisorLead(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.created(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * getAllMyLeads - Super admin and admin can fetch all my leads and their stats.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getAdvisorLeads = async (req, res, next) => {
+  try {
+    const data = await leadService.getAdvisorLeads(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};

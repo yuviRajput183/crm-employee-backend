@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import ErrorResponse from "../lib/error.res.js";
 import Employee from "../models/Employee.model.js";
+import Advisor from "../models/Advisor.model.js";
 
 /**
  * authenticate - Middleware to authenticate the user.
@@ -25,7 +26,6 @@ export const authenticate = async (req, res, next) => {
       groupId: decoded.groupId,
       ownerId: decoded.ownerId,
     };
-
     let user = null;
     if (decoded.role === "employee") {
       user = await Employee.findById(decoded.referenceId);

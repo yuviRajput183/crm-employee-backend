@@ -580,21 +580,23 @@ class InvoicesService {
       await Lead.findByIdAndUpdate(invoice.leadId, { finalInvoice: false });
     }
 
-
     return {
       message: "Invoice deleted successfully",
     };
   }
 
-  async myPerformance(req, res, next) {
+  // EMPLOYEE PANEL
+
+  /**
+   * employeePerformance - Normal employee watch his invoices.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async employeePerformance(req, res, next) {
     const userId = req.user.referenceId;
 
-    const {
-      productType,
-      bankName,
-      fromDate,
-      toDate,
-    } = req.query;
+    const { productType, bankName, fromDate, toDate } = req.query;
 
     // Dynamic match conditions
     const leadMatch = {
@@ -625,9 +627,7 @@ class InvoicesService {
 
     const result = await Invoice.aggregate([
       // Invoice Date Filter
-      ...(Object.keys(invoiceMatch).length
-        ? [{ $match: invoiceMatch }]
-        : []),
+      ...(Object.keys(invoiceMatch).length ? [{ $match: invoiceMatch }] : []),
 
       // Join Lead
       {
@@ -668,9 +668,7 @@ class InvoicesService {
       { $unwind: "$bank" },
 
       // Bank Filter
-      ...(Object.keys(bankMatch).length
-        ? [{ $match: bankMatch }]
-        : []),
+      ...(Object.keys(bankMatch).length ? [{ $match: bankMatch }] : []),
 
       // Final Projection
       {
@@ -679,7 +677,7 @@ class InvoicesService {
           loanType: "$lead.productType",
           customerName: "$lead.clientName",
           bankName: "$bank.name",
-          disbursalAmount: 1,
+          loanRequirementAmount: "$lead.loanRequirementAmount",
           disbursalDate: 1,
           month: {
             $dateToString: {
@@ -710,10 +708,119 @@ class InvoicesService {
 
     return {
       data: result[0] || {
-          records: [],
-          totalDisbursalAmount: 0,
-        },
+        records: [],
+        totalDisbursalAmount: 0,
+      },
       message: "My Performance data retrieved successfully",
+    };
+  }
+
+  // ADVISOR PANEL
+
+  /**
+   * advisorPerformance - Normal employee watch his invoices.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async advisorPerformance(req, res, next) {
+    // Convert string ID to MongoDB ObjectId for the aggregation match
+    const userId = new mongoose.Types.ObjectId(req.user.referenceId);
+
+    const { productType, bankName, fromDate, toDate } = req.query;
+
+    // 1. Define Invoice level filters (Dates)
+    const invoiceMatch = {};
+    if (fromDate || toDate) {
+      invoiceMatch.disbursalDate = {};
+      if (fromDate) invoiceMatch.disbursalDate.$gte = new Date(fromDate);
+      if (toDate) invoiceMatch.disbursalDate.$lte = new Date(toDate);
+    }
+
+    // 2. Define Lead level filters (Advisor & Product Type)
+    const leadMatch = {
+      "lead.advisorId": userId,
+    };
+    if (productType) {
+      leadMatch["lead.productType"] = productType;
+    }
+
+    // 3. Define Bank level filter
+    const bankMatch = {};
+    if (bankName) {
+      // Uses regex for partial, case-insensitive bank name matching
+      bankMatch["bank.name"] = { $regex: bankName, $options: "i" };
+    }
+
+    const records = await Invoice.aggregate([
+      // Filter by Invoice dates first for better performance
+      ...(Object.keys(invoiceMatch).length ? [{ $match: invoiceMatch }] : []),
+
+      // Join with Leads collection
+      {
+        $lookup: {
+          from: "leads",
+          localField: "leadId",
+          foreignField: "_id",
+          as: "lead",
+        },
+      },
+      { $unwind: "$lead" },
+
+      // Security & Product Filter
+      { $match: leadMatch },
+
+      // Join with Bankers collection
+      {
+        $lookup: {
+          from: "bankers",
+          localField: "lead.bankerId",
+          foreignField: "_id",
+          as: "banker",
+        },
+      },
+      // Preserve record even if no banker is assigned yet
+      { $unwind: { path: "$banker", preserveNullAndEmptyArrays: true } },
+
+      // Join with Banks collection
+      {
+        $lookup: {
+          from: "banks",
+          localField: "banker.bank",
+          foreignField: "_id",
+          as: "bank",
+        },
+      },
+      { $unwind: { path: "$bank", preserveNullAndEmptyArrays: true } },
+
+      // Apply Bank Name Filter
+      ...(Object.keys(bankMatch).length ? [{ $match: bankMatch }] : []),
+
+      // Final Projection to match table columns
+      {
+        $project: {
+          _id: 1,
+          leadNo: "$lead.leadNo",
+          loanType: "$lead.productType",
+          customerName: "$lead.clientName",
+          bankName: { $ifNull: ["$bank.name", "N/A"] },
+          loanRequirementAmount: "$lead.loanRequirementAmount",
+          disbursalDate: 1,
+          month: {
+            $dateToString: {
+              format: "%b %Y",
+              date: "$disbursalDate",
+            },
+          },
+        },
+      },
+      // Sort by newest disbursal date first
+      { $sort: { disbursalDate: -1 } },
+    ]);
+
+    return {
+      data: records,
+      message: "Advisor Performance data retrieved successfully",
     };
   }
 }

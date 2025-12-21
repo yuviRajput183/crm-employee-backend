@@ -1,5 +1,5 @@
 import express from "express";
-import { addPayable, deletePayable, editPayable, getAdvisorsAssociatedWithPayout, getAllPayables, getLeadIdOfAllAdvisorPayouts, getSinglePayable } from "../controller/payables.controller.js";
+import { addPayable, deletePayable, editPayable, getAdvisorPayout, getAdvisorsAssociatedWithPayout, getAllPayables, getLeadIdOfAllAdvisorPayouts, getSinglePayable } from "../controller/payables.controller.js";
 import { authenticate, isAdminDepartment } from "../middlewares/verifyayth.middleware.js";
 
 const router = express.Router();
@@ -21,5 +21,9 @@ router.get("/single-payable/:id", authenticate, isAdminDepartment, getSinglePaya
 router.put("/edit-payable/:id", authenticate, isAdminDepartment, editPayable);
 
 router.delete("/delete-payable", authenticate, isAdminDepartment, deletePayable);
+
+// ADVISOR PANEL
+router.get("/advisor-payout", authenticate, getAdvisorPayout);
+
 
 export default router;

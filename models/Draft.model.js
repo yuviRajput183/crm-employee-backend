@@ -21,16 +21,8 @@ const documentSchema = new mongoose.Schema({
   password: String
 }, { _id: false });
 
-const historySchema = new mongoose.Schema({
-  feedback: String,
-  commentBy: String,
-  commentDate: String, 
-  remarks: String,
-  replyDate: String,
-  advisorReply: String
-}, { _id: false });
 
-const leadSchema = new mongoose.Schema({
+const draftSchema = new mongoose.Schema({
   productType: {
     type: String,
     required: true,
@@ -43,10 +35,6 @@ const leadSchema = new mongoose.Schema({
   loanRequirementAmount: {
     type: Number,
     // required: true
-  },
-  leadNo: {
-    type: Number,
-    unique: true
   },
   clientName: {
     type: String,
@@ -92,15 +80,8 @@ const leadSchema = new mongoose.Schema({
   runningLoans: [runningLoanSchema],
   references: [referenceSchema],
   documents: [documentSchema],
-  history: [historySchema],
 
   password: String,
-  
-  allocatedTo: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Employee',
-    // required: true
-  },
 
    // Business Fields
   businessName: String,
@@ -138,51 +119,16 @@ const leadSchema = new mongoose.Schema({
   description: String,
   amount: Number,
 
-  finalPayout: {
-    type: Boolean,
-    default: false,
-    description: "This shows that advisor payout is final or not"
-  },
-
-  finalInvoice: {
-    type: Boolean,
-    default: false,
-    description: "This shows that invoice is final or not"
-  },
 
   advisorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Advisor",
     required: true
   },
-
-  employeeId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Employee",
-  },
-
-  bankerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Banker",
-    description: "Banker assigned when loan is disbursed"
-  },
-
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Employee',
-  },
-  updatedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Employee',
-  },
-  // createdAt: { 
-  //   type: Date, 
-  //   default: Date.now 
-  // }
 }, {
   timestamps: true
 });
 
-const Lead = mongoose.models.Lead || mongoose.model("Lead", leadSchema);
+const Draft = mongoose.models.Draft || mongoose.model("Draft", draftSchema);
 
-export default Lead;
+export default Draft;

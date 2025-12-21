@@ -171,3 +171,21 @@ export const deletePayable = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 }
+
+// ADVISOR PANEL
+
+/**
+ * getAdvisorPayout - Get all advisor payout details of the logged-in advisor.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getAdvisorPayout = async (req, res, next) => {
+  try {
+    const data = await payablesService.getAdvisorPayout(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
