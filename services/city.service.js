@@ -3,6 +3,7 @@ import ErrorResponse from "../lib/error.res.js";
 import City from "../models/City.model.js";
 import Employee from "../models/Employee.model.js";
 import fs from "fs";
+import Advisor from "../models/Advisor.model.js";
 
 class CityService {
   /**
@@ -127,7 +128,7 @@ class CityService {
     const { stateName } = req.query;
     const userId = req.user.referenceId;
 
-    const currentUser = await Employee.findById(userId).select("groupId");
+    const currentUser = await Employee.findById(userId).select("groupId") || await Advisor.findById(userId).select("groupId");
     if (!currentUser) {
       return next(ErrorResponse.notFound("Logged-in user not found"));
     }

@@ -14,3 +14,24 @@ export const addPayoutFile = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 };
+
+export const getAllPayoutFiles = async (req, res, next) => {
+  try {
+    const data = await payoutService.getAllPayoutFiles(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+export const downloadPayoutFile = async (req, res, next) => {
+  try {
+    const data = await payoutService.downloadPayoutFile(req, res, next);
+    if (data && data.filePath) {
+      res.download(data.filePath, data.fileName);
+    }
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};

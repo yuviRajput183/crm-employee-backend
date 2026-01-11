@@ -1,5 +1,4 @@
-import express from "express";
-import { addDraft, addLead, advisorLead, bankerCitiesByStateName, deleteAllLeadAttachments, editLead, editLeadAdvisor, getAdvisorLeads, getAllDrafts, getAllLeads, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getSignleDraft, getSignleLead } from "../controller/lead.controller.js";
+import { addDraft, addLead, advisorLead, bankerCitiesByStateName, deleteAllLeadAttachments, editLead, editLeadAdvisor, getAdvisorLeads, getAdvisorStatistics, getAllDrafts, getAllLeads, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getEmployeeStatistics, getLeadStatistics, getSignleDraft, getSignleLead } from "../controller/lead.controller.js";
 import { uploadDocument } from "../middlewares/documentUpload.js";
 import { authenticate, isAdminDepartment } from "../middlewares/verifyayth.middleware.js";
 
@@ -21,6 +20,11 @@ router.get("/banker-by-bankerId", authenticate, getBankerByBankerId);
 router.get("/all-my-leads", authenticate, getAllMyLeads);
 
 router.get("/customers-by-advisorId", authenticate, getCustomersName);
+
+
+router.get("/statistics", authenticate, isAdminDepartment, getLeadStatistics);
+router.get("/employee-statistics", authenticate, getEmployeeStatistics);
+router.get("/advisor-statistics", authenticate, getAdvisorStatistics);
 
 router.get("/all-leads", authenticate, isAdminDepartment, getAllLeads);
 

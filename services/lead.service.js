@@ -61,14 +61,12 @@ class LeadService {
       },
     ];
 
-    if (req.file) {
-      data.documents = [
-        {
-          attachmentType: data.attachmentType || "Document",
-          fileUrl: req.file.path,
-          password: data.password || null,
-        },
-      ];
+    if (req.files && req.files.length > 0) {
+      data.documents = req.files.map(file => ({
+        attachmentType: data.attachmentType || "Document",
+        fileUrl: file.path,
+        password: data.password || null,
+      }));
     }
 
     if (employee.role?.toLowerCase() === "employee") {
@@ -342,15 +340,13 @@ class LeadService {
     parseJSONField("references");
     parseJSONField("documents");
 
-    if (req.file) {
-      existingLead.documents = [
-        {
-          attachmentType:
-            updates.attachmentType || existingLead.attachmentType || "Document",
-          fileUrl: req.file.path,
-          password: updates.password || existingLead.password || null,
-        },
-      ];
+    if (req.files && req.files.length > 0) {
+      const newDocs = req.files.map(file => ({
+        attachmentType: updates.attachmentType || existingLead.attachmentType || "Document",
+        fileUrl: file.path,
+        password: updates.password || existingLead.password || null,
+      }));
+      existingLead.documents = existingLead.documents ? [...existingLead.documents, ...newDocs] : newDocs;
     }
 
     // attach banker details if feedback last field is "loan disbursed"
@@ -842,14 +838,12 @@ class LeadService {
       }
     }
 
-    if (req.file) {
-      data.documents = [
-        {
-          attachmentType: data.attachmentType || "Document",
-          fileUrl: req.file.path,
-          password: data.password || null,
-        },
-      ];
+    if (req.files && req.files.length > 0) {
+      data.documents = req.files.map(file => ({
+        attachmentType: data.attachmentType || "Document",
+        fileUrl: file.path,
+        password: data.password || null,
+      }));
     }
 
     data.advisorId = advisor._id;
@@ -953,14 +947,12 @@ class LeadService {
       },
     ];
     
-    if (req.file) {
-      data.documents = [
-        {
-          attachmentType: data.attachmentType || "Document",
-          fileUrl: req.file.path,
-          password: data.password || null,
-        },
-      ];
+    if (req.files && req.files.length > 0) {
+      data.documents = req.files.map(file => ({
+        attachmentType: data.attachmentType || "Document",
+        fileUrl: file.path,
+        password: data.password || null,
+      }));
     }
 
     data.allocatedTo = null;
@@ -1075,6 +1067,133 @@ class LeadService {
         stats: percentageStats,
       },
       message: "Advisor leads retrieved successfully",
+    }
+  }
+
+  /**
+   * getLeadStatistics - Get statistics for leads.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getLeadStatistics(req, res, next) {
+    try {
+      // Fetch all leads with necessary fields
+      const leads = await Lead.find({})
+        .select("history loanRequirementAmount insuranceAmount amount productType")
+        .lean();
+
+      return this._calculateLeadStats(leads);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * getEmployeeStatistics - Get statistics for leads allocated to the logged-in employee.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getEmployeeStatistics(req, res, next) {
+    try {
+      const leads = await Lead.find({ allocatedTo: req.user.referenceId })
+        .select("history loanRequirementAmount insuranceAmount amount productType")
+        .lean();
+
+      return this._calculateLeadStats(leads);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * getAdvisorStatistics - Get statistics for leads associated with the logged-in advisor.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getAdvisorStatistics(req, res, next) {
+    try {
+      const leads = await Lead.find({ advisorId: req.user.referenceId })
+        .select("history loanRequirementAmount insuranceAmount amount productType")
+        .lean();
+
+      return this._calculateLeadStats(leads);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Helper method to calculate stats
+  _calculateLeadStats(leads) {
+    const totalLeads = leads.length;
+
+    let underProcessCount = 0;
+    let approvedCount = 0;
+    let disbursedCount = 0;
+
+    let totalDisbursalAmount = 0;
+    let totalDisbursalAmountThisMonth = 0;
+    let totalDisbursalAmountThisYear = 0;
+
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // 0-indexed
+
+    leads.forEach((lead) => {
+      const lastHistory = lead.history?.[lead.history.length - 1];
+      if (!lastHistory) return;
+
+      const feedback = lastHistory.feedback;
+
+      if (feedback === "Under Process") {
+        underProcessCount++;
+      } else if (feedback === "Approved") {
+        approvedCount++;
+      } else if (feedback === "Loan Disbursed" || feedback === "Policy Issued" || feedback === "Invoice Raised") {
+        disbursedCount++;
+
+        // Calculate disbursal amount
+        let amount = 0;
+        if (lead.loanRequirementAmount) {
+          amount = lead.loanRequirementAmount;
+        } else if (lead.insuranceAmount) {
+          amount = lead.insuranceAmount;
+        } else if (lead.amount) {
+          amount = lead.amount;
+        }
+
+        totalDisbursalAmount += amount;
+
+        // Parse commentDate (format: DD/MM/YYYY-hh:mm A)
+        const dateString = lastHistory.commentDate?.split('-')[0];
+        if (dateString) {
+          const [day, month, year] = dateString.split('/').map(Number);
+          const date = new Date(year, month - 1, day);
+
+          if (date.getFullYear() === currentYear) {
+            totalDisbursalAmountThisYear += amount;
+            if (date.getMonth() === currentMonth) {
+              totalDisbursalAmountThisMonth += amount;
+            }
+          }
+        }
+      }
+    });
+
+    const stats = {
+      totalLeads,
+      percentageUnderProcess: totalLeads > 0 ? ((underProcessCount / totalLeads) * 100).toFixed(2) : "0.00",
+      percentageApproved: totalLeads > 0 ? ((approvedCount / totalLeads) * 100).toFixed(2) : "0.00",
+      percentageDisbursed: totalLeads > 0 ? ((disbursedCount / totalLeads) * 100).toFixed(2) : "0.00",
+      totalDisbursalAmount,
+      totalDisbursalAmountThisMonth,
+      totalDisbursalAmountThisYear,
+    };
+
+    return {
+      data: stats,
+      message: "Lead statistics retrieved successfully",
     };
   }
 }

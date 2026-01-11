@@ -253,6 +253,57 @@ export const getCustomersName = async (req, res, next) => {
 };
 
 /**
+ * getLeadStatistics - Get statistics for leads.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export async function getLeadStatistics(req, res, next) {
+  try {
+    const result = await leadService.getLeadStatistics(req, res, next);
+    if (result) {
+      res.status(200).json(result);
+    }
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}
+
+/**
+ * getEmployeeStatistics - Get statistics for leads allocated to the logged-in employee.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export async function getEmployeeStatistics(req, res, next) {
+  try {
+    const result = await leadService.getEmployeeStatistics(req, res, next);
+    if (result) {
+      res.status(200).json(result);
+    }
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}
+
+/**
+ * getAdvisorStatistics - Get statistics for leads associated with the logged-in advisor.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export async function getAdvisorStatistics(req, res, next) {
+  try {
+    const result = await leadService.getAdvisorStatistics(req, res, next);
+    if (result) {
+      res.status(200).json(result);
+    }
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}
+
+/**
  * deleteAllLeadAttachments - Delete all attachments associated with a lead.
  * @param {Object} req - The HTTP request object.
  * @param {Object} res - The HTTP response object.

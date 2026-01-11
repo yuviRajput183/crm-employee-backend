@@ -13,4 +13,4 @@ const documentStorage = multer.diskStorage({
 export const uploadDocument = multer({
   storage: documentStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-}).single('document');  // should match frontend 'photo' key
+}).array('documents');  // should match frontend 'documents' key
