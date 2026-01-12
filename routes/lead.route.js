@@ -1,3 +1,4 @@
+import express from "express";
 import { addDraft, addLead, advisorLead, bankerCitiesByStateName, deleteAllLeadAttachments, editLead, editLeadAdvisor, getAdvisorLeads, getAdvisorStatistics, getAllDrafts, getAllLeads, getAllMyLeads, getAllNewLeads, getBankerByBankerId, getBankersByBankId, getBanksByCityId, getCustomersName, getEmployeeStatistics, getLeadStatistics, getSignleDraft, getSignleLead } from "../controller/lead.controller.js";
 import { uploadDocument } from "../middlewares/documentUpload.js";
 import { authenticate, isAdminDepartment } from "../middlewares/verifyayth.middleware.js";
