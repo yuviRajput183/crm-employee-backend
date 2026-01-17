@@ -2,12 +2,12 @@ import ErrorResponse from "../lib/error.res.js";
 import Slider from "../models/Slider.model.js";
 
 class SliderService {
-  /**
-   * addOrUpdateSliders - Add or update sliders images.
-   * @param {Object} req - The HTTP request object.
-   * @param {Object} res - The HTTP response object.
-   * @param {Function} next - The next middleware function for error handling.
-   */
+    /**
+     * addOrUpdateSliders - Add or update sliders images.
+     * @param {Object} req - The HTTP request object.
+     * @param {Object} res - The HTTP response object.
+     * @param {Function} next - The next middleware function for error handling.
+     */
     async addOrUpdateSliders(req, res, next) {
         const userId = req.user.referenceId;
         let sliderDoc = await Slider.findOne({
@@ -21,7 +21,7 @@ class SliderService {
             };
             ["slider1", "slider2", "slider3", "slider4", "slider5"].forEach(
                 (field) => {
-                    if(req.files[field]) {
+                    if (req.files[field]) {
                         newData[field] = req.files[field][0].filename;
                     }
                 }
@@ -32,7 +32,7 @@ class SliderService {
             // Update only sent fields
             ["slider1", "slider2", "slider3", "slider4", "slider5"].forEach(
                 (field) => {
-                    if(req.files[field]) {
+                    if (req.files[field]) {
                         sliderDoc[field] = req.files[field][0].filename;
                     }
                 }
@@ -54,8 +54,8 @@ class SliderService {
      */
     async getAllSliders(req, res, next) {
         const sliders = await Slider.find();
-        
-        if(sliders.length === 0) {
+
+        if (sliders.length === 0) {
             return next(ErrorResponse.notFound("Slider not found"));
         }
 

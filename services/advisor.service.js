@@ -61,7 +61,7 @@ class AdvisorService {
     // console.log(cityName, stateName);
     // Find the city by name + state name
     const cityDoc = await City.findOne({
-       _id: cityName,
+      _id: cityName,
       stateName: { $regex: `^${stateName}$`, $options: "i" },
     });
 
@@ -306,7 +306,13 @@ class AdvisorService {
     advisor.name = name || advisor.name;
     advisor.mobile = mobile || advisor.mobile;
     advisor.email = email || advisor.email;
-    advisor.photoUrl = photoUrl || advisor.photoUrl;
+    advisor.email = email || advisor.email;
+    if (req.body.isPhotoRemoved === "true" || req.body.isPhotoRemoved === true) {
+      advisor.photoUrl = "";
+    } else {
+      advisor.photoUrl = photoUrl || advisor.photoUrl;
+    }
+    advisor.companyName = companyName || advisor.companyName;
     advisor.companyName = companyName || advisor.companyName;
     advisor.address = address || advisor.address;
     advisor.altContact = altContact || advisor.altContact;
@@ -406,7 +412,7 @@ class AdvisorService {
       }
     }
 
-    if(advisors.length === 0) {
+    if (advisors.length === 0) {
       return {
         data: [],
         message: "No advisors found",
@@ -417,7 +423,7 @@ class AdvisorService {
       data: advisors,
       message: "Advisors fetched successfully",
     };
-    
+
   }
 }
 

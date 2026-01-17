@@ -450,7 +450,7 @@ class EmployeeService {
     if (
       reportingOfficer &&
       reportingOfficer.toString() !==
-        employeeToUpdate.reportingOfficer?.toString()
+      employeeToUpdate.reportingOfficer?.toString()
     ) {
       const officerExists = await Employee.findById(reportingOfficer);
       if (!officerExists) {
@@ -470,7 +470,11 @@ class EmployeeService {
     employeeToUpdate.mobile = mobile || employeeToUpdate.mobile;
     employeeToUpdate.address = address || employeeToUpdate.address;
     employeeToUpdate.altContact = altContact || employeeToUpdate.altContact;
-    employeeToUpdate.photoUrl = photoUrl || employeeToUpdate.photoUrl;
+    if (req.body.isPhotoRemoved === "true" || req.body.isPhotoRemoved === true) {
+      employeeToUpdate.photoUrl = "";
+    } else {
+      employeeToUpdate.photoUrl = photoUrl || employeeToUpdate.photoUrl;
+    }
     employeeToUpdate.designation = designation || employeeToUpdate.designation;
     employeeToUpdate.dateOfJoining =
       dateOfJoining || employeeToUpdate.dateOfJoining;
@@ -573,13 +577,13 @@ class EmployeeService {
   async getNonAdminEmployees(req, res, next) {
     const currentEmployee = await Employee.findById(req.user.referenceId);
 
-    if(!currentEmployee) {
+    if (!currentEmployee) {
       return next(ErrorResponse.notFound("Employee not found"));
     }
 
     let employees = [];
 
-    if(currentEmployee.role.toLowerCase() === "admin" && currentEmployee.isOwner) {
+    if (currentEmployee.role.toLowerCase() === "admin" && currentEmployee.isOwner) {
       // Super Admin - see all non-admin employees in their group
       employees = await Employee.find({
         role: "employee",
