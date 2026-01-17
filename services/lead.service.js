@@ -61,11 +61,24 @@ class LeadService {
       },
     ];
 
+    // Process uploaded documents with their metadata
     if (req.files && req.files.length > 0) {
-      data.documents = req.files.map(file => ({
-        attachmentType: data.attachmentType || "Document",
+      let documentsMetadata = [];
+
+      // Parse documentsMetadata if it exists
+      if (data.documentsMetadata) {
+        try {
+          documentsMetadata = JSON.parse(data.documentsMetadata);
+        } catch (err) {
+          return next(ErrorResponse.badRequest("Invalid JSON in documentsMetadata"));
+        }
+      }
+
+      // Map each file with its corresponding metadata
+      data.documents = req.files.map((file, index) => ({
+        attachmentType: documentsMetadata[index]?.attachmentType || "Document",
         fileUrl: file.path,
-        password: data.password || null,
+        password: documentsMetadata[index]?.password || null,
       }));
     }
 
@@ -161,8 +174,8 @@ class LeadService {
 
       const matchAdvisorName = advisorName
         ? lead.advisorId?.name
-            ?.toLowerCase()
-            .includes(advisorName.toLowerCase())
+          ?.toLowerCase()
+          .includes(advisorName.toLowerCase())
         : true;
 
       return matchFeedback && matchFeedbackQuery && matchAdvisorName;
@@ -340,11 +353,24 @@ class LeadService {
     parseJSONField("references");
     parseJSONField("documents");
 
+    // Process uploaded documents with their metadata
     if (req.files && req.files.length > 0) {
-      const newDocs = req.files.map(file => ({
-        attachmentType: updates.attachmentType || existingLead.attachmentType || "Document",
+      let documentsMetadata = [];
+
+      // Parse documentsMetadata if it exists
+      if (updates.documentsMetadata) {
+        try {
+          documentsMetadata = JSON.parse(updates.documentsMetadata);
+        } catch (err) {
+          return next(ErrorResponse.badRequest("Invalid JSON in documentsMetadata"));
+        }
+      }
+
+      // Map each file with its corresponding metadata
+      const newDocs = req.files.map((file, index) => ({
+        attachmentType: documentsMetadata[index]?.attachmentType || "Document",
         fileUrl: file.path,
-        password: updates.password || existingLead.password || null,
+        password: documentsMetadata[index]?.password || null,
       }));
       existingLead.documents = existingLead.documents ? [...existingLead.documents, ...newDocs] : newDocs;
     }
@@ -612,8 +638,8 @@ class LeadService {
 
       const matchAdvisorName = advisorName
         ? lead.advisorId?.name
-            ?.toLowerCase()
-            .includes(advisorName.toLowerCase())
+          ?.toLowerCase()
+          .includes(advisorName.toLowerCase())
         : true;
 
       return matchFeedback && matchFeedbackQuery && matchAdvisorName;
@@ -838,11 +864,24 @@ class LeadService {
       }
     }
 
+    // Process uploaded documents with their metadata
     if (req.files && req.files.length > 0) {
-      data.documents = req.files.map(file => ({
-        attachmentType: data.attachmentType || "Document",
+      let documentsMetadata = [];
+
+      // Parse documentsMetadata if it exists
+      if (data.documentsMetadata) {
+        try {
+          documentsMetadata = JSON.parse(data.documentsMetadata);
+        } catch (err) {
+          return next(ErrorResponse.badRequest("Invalid JSON in documentsMetadata"));
+        }
+      }
+
+      // Map each file with its corresponding metadata
+      data.documents = req.files.map((file, index) => ({
+        attachmentType: documentsMetadata[index]?.attachmentType || "Document",
         fileUrl: file.path,
-        password: data.password || null,
+        password: documentsMetadata[index]?.password || null,
       }));
     }
 
@@ -946,12 +985,25 @@ class LeadService {
         advisorReply: "",
       },
     ];
-    
+
+    // Process uploaded documents with their metadata
     if (req.files && req.files.length > 0) {
-      data.documents = req.files.map(file => ({
-        attachmentType: data.attachmentType || "Document",
+      let documentsMetadata = [];
+
+      // Parse documentsMetadata if it exists
+      if (data.documentsMetadata) {
+        try {
+          documentsMetadata = JSON.parse(data.documentsMetadata);
+        } catch (err) {
+          return next(ErrorResponse.badRequest("Invalid JSON in documentsMetadata"));
+        }
+      }
+
+      // Map each file with its corresponding metadata
+      data.documents = req.files.map((file, index) => ({
+        attachmentType: documentsMetadata[index]?.attachmentType || "Document",
         fileUrl: file.path,
-        password: data.password || null,
+        password: documentsMetadata[index]?.password || null,
       }));
     }
 

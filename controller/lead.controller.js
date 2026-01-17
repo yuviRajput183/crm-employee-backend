@@ -115,8 +115,6 @@ export const editLead = async (req, res, next) => {
     "mobileNo",
     "advisorId",
     "productType",
-    "pinCode",
-    "emailId",
   ];
   const missingFields = helperService.validateFields(requiredFields, req.body);
 
