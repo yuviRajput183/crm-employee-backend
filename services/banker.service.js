@@ -1,6 +1,6 @@
 import ErrorResponse from "../lib/error.res.js";
 import Bank from "../models/Bank.model.js";
-import Banker from "../models/banker.model.js";
+import Banker from "../models/Banker.model.js";
 import City from "../models/City.model.js";
 import Employee from "../models/Employee.model.js";
 
