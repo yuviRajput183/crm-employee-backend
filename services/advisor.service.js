@@ -269,8 +269,8 @@ class AdvisorService {
       companyName,
       address,
       altContact,
-      state,
-      city,
+      stateName,
+      cityName,
       reportingOfficer,
       aadharNo,
       panNo,
@@ -316,8 +316,8 @@ class AdvisorService {
     advisor.companyName = companyName || advisor.companyName;
     advisor.address = address || advisor.address;
     advisor.altContact = altContact || advisor.altContact;
-    advisor.state = state || advisor.state;
-    advisor.city = city || advisor.city;
+    advisor.state = stateName || advisor.state;
+    advisor.city = cityName || advisor.city;
     advisor.reportingOfficer = reportingOfficer || advisor.reportingOfficer;
     advisor.aadharNo = aadharNo || advisor.aadharNo;
     advisor.panNo = panNo || advisor.panNo;

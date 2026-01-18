@@ -60,9 +60,13 @@ class ReceivableService {
       return next(ErrorResponse.badRequest("Lead id is required"));
     }
 
-    const invoiceMaster = await InvoiceMaster.findOne({ leadId }).populate(
-      "leadId"
-    );
+    const invoiceMaster = await InvoiceMaster.findOne({ leadId }).populate({
+      path: "leadId",
+      populate: [
+        { path: "advisorId", model: "Advisor" },
+        { path: "bankerId", model: "Banker" },
+      ],
+    });
 
     if (!invoiceMaster) {
       return next(ErrorResponse.notFound("Invoice master not found"));
@@ -98,7 +102,7 @@ class ReceivableService {
     try {
       if (receivedAmount < 0)
         return next(
-          ErrorResponse.badRequest("Received amount cannot be negative")
+          ErrorResponse.badRequest("Received amount cannot be negative"),
         );
 
       if (!["receivableAmount", "gstPayment"].includes(paymentAgainst))
@@ -106,9 +110,8 @@ class ReceivableService {
 
       const employeeId = req.user.referenceId;
 
-      const invoiceMaster = await InvoiceMaster.findById(
-        invoiceMasterId
-      ).session(session);
+      const invoiceMaster =
+        await InvoiceMaster.findById(invoiceMasterId).session(session);
       if (!invoiceMaster)
         return next(ErrorResponse.notFound("Invoice not found"));
 
@@ -120,8 +123,8 @@ class ReceivableService {
       if (balanceAmountCalc < 0)
         return next(
           ErrorResponse.badRequest(
-            "Received amount cannot exceed receivable amount"
-          )
+            "Received amount cannot exceed receivable amount",
+          ),
         );
 
       const receivable = await Receivable.create(
@@ -140,18 +143,18 @@ class ReceivableService {
             updatedBy: employeeId,
           },
         ],
-        { session }
+        { session },
       );
 
       if (paymentAgainst === "receivableAmount") {
         invoiceMaster.remainingReceivableAmount = Math.max(
           (invoiceMaster.remainingReceivableAmount || 0) - receivedAmount,
-          0
+          0,
         );
       } else if (paymentAgainst === "gstPayment") {
         invoiceMaster.remainingGstAmount = Math.max(
           (invoiceMaster.remainingGstAmount || 0) - receivedAmount,
-          0
+          0,
         );
       }
 
@@ -331,7 +334,7 @@ class ReceivableService {
     }
 
     const invoiceMaster = await InvoiceMaster.findById(
-      receivable.invoiceMasterId
+      receivable.invoiceMasterId,
     );
     if (!invoiceMaster) {
       return next(ErrorResponse.notFound("Invoice Master not found"));
@@ -350,14 +353,14 @@ class ReceivableService {
     if (receivedAmount !== undefined && receivedAmount !== oldReceivedAmount) {
       if (receivedAmount < 0)
         return next(
-          ErrorResponse.badRequest("Received amount cannot be negative")
+          ErrorResponse.badRequest("Received amount cannot be negative"),
         );
 
       if (receivedAmount > totalAmount)
         return next(
           ErrorResponse.badRequest(
-            "Received amount cannot exceed receivable amount"
-          )
+            "Received amount cannot exceed receivable amount",
+          ),
         );
 
       const diff = receivedAmount - oldReceivedAmount;
@@ -365,18 +368,18 @@ class ReceivableService {
       receivable.receivedAmount = receivedAmount;
       receivable.balanceAmount = Math.max(
         (receivable.receivableAmount || 0) - (receivedAmount || 0),
-        0
+        0,
       );
 
       if (receivable.paymentAgainst === "receivableAmount") {
         invoiceMaster.remainingReceivableAmount = Math.max(
           (invoiceMaster.remainingReceivableAmount || 0) - diff,
-          0
+          0,
         );
       } else if (receivable.paymentAgainst === "gstPayment") {
         invoiceMaster.remainingGstAmount = Math.max(
           (invoiceMaster.remainingGstAmount || 0) - diff,
-          0
+          0,
         );
       }
 
@@ -407,7 +410,7 @@ class ReceivableService {
     }
 
     const invoiceMaster = await InvoiceMaster.findById(
-      receivable.invoiceMasterId
+      receivable.invoiceMasterId,
     );
     if (!invoiceMaster) {
       return next(ErrorResponse.notFound("Invoice Master not found"));

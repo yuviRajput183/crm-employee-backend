@@ -321,20 +321,20 @@ class PayablesService {
       return next(ErrorResponse.notFound("Advisor Payout not found"));
     }
 
-    const { paidAmount, paidDate, refNo, remarks, totalAmount } = req.body;
+    const { paidAmount, paidDate, refNo, remarks, payableAmount } = req.body;
 
     const oldPaidAmount = payable.paidAmount;
 
     if (paidDate !== undefined) payable.paidDate = paidDate;
     if (refNo !== undefined) payable.refNo = refNo;
     if (remarks !== undefined) payable.remarks = remarks;
-    payable.payableAmount = totalAmount;
+    if (payableAmount !== undefined) payable.payableAmount = payableAmount;
 
     if (paidAmount !== undefined && paidAmount !== oldPaidAmount) {
       if (paidAmount < 0)
         return next(ErrorResponse.badRequest("Paid amount cannot be negative"));
 
-      if (paidAmount > totalAmount)
+      if (paidAmount > payable.payableAmount)
         return next(
           ErrorResponse.badRequest("Paid amount cannot exceed payable amount")
         );

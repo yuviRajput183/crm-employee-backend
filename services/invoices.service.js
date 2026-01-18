@@ -594,7 +594,8 @@ class InvoicesService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async employeePerformance(req, res, next) {
-    const userId = req.user.referenceId;
+    // const userId = req.user.referenceId;
+    const userId = new mongoose.Types.ObjectId(req.user.referenceId);
 
     const { productType, bankName, fromDate, toDate } = req.query;
 
@@ -693,7 +694,7 @@ class InvoicesService {
         $group: {
           _id: null,
           records: { $push: "$$ROOT" },
-          totalDisbursalAmount: { $sum: "$disbursalAmount" },
+          totalDisbursalAmount: { $sum: "$loanRequirementAmount" },
         },
       },
 
