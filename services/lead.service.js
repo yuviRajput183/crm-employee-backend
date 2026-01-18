@@ -4,7 +4,7 @@ import Lead from "../models/Lead.model.js";
 import moment from "moment";
 import helperService from "./helper.service.js";
 import Advisor from "../models/Advisor.model.js";
-import Banker from "../models/banker.model.js";
+import Banker from "../models/Banker.model.js";
 import path from "path";
 import fs from "fs";
 import Draft from "../models/Draft.model.js";
