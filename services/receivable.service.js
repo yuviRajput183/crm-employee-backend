@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import ErrorResponse from "../lib/error.res.js";
 import InvoiceMaster from "../models/InvoiceMaster.model.js";
 import Receivable from "../models/Receivable.model.js";
+import { populate } from "dotenv";
 
 class ReceivableService {
   /**
@@ -64,7 +65,14 @@ class ReceivableService {
       path: "leadId",
       populate: [
         { path: "advisorId", model: "Advisor" },
-        { path: "bankerId", model: "Banker" },
+        { 
+          path: "bankerId", 
+          model: "Banker" ,
+          populate: [
+            { path: "city", model: "City" },
+            { path: "bank", model: "Bank" },
+          ]
+        },
       ],
     });
 
@@ -271,6 +279,10 @@ class ReceivableService {
           },
           {
             path: "bankerId",
+            populate: [
+              { path: "city", model: "City" },
+              { path: "bank", model: "Bank" },
+            ]
           },
         ],
       })
