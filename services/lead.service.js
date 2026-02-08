@@ -159,7 +159,7 @@ class LeadService {
     const validFeedbacks = [
       "Allocated",
       "Docs Query",
-      "Approved",
+      "Loan Approved",
       "Under Process",
     ];
 
@@ -186,7 +186,7 @@ class LeadService {
     const feedbackStats = {
       Allocated: 0,
       "Docs Query": 0,
-      Approved: 0,
+      "Loan Approved": 0,
       "Under Process": 0,
     };
 
