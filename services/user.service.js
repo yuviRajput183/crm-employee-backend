@@ -286,6 +286,67 @@ class UserService {
       message: "Login credentials updated successfully",
     };
   }
+
+  /**
+   * changePassword - Any authenticated user can change their password.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async changePassword(req, res, next) {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user.id;
+
+    if (newPassword !== confirmPassword) {
+      return next(
+        ErrorResponse.badRequest("New password and confirm password do not match")
+      );
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(ErrorResponse.notFound("User not found"));
+    }
+
+    if (user.password !== oldPassword) {
+      return next(ErrorResponse.unauthorized("Old password is incorrect"));
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return {
+      message: "Password changed successfully",
+    };
+  }
+
+  /**
+   * getProfile - Authenticated user can fetch their own profile details.
+   * @param {Object} req - The HTTP request object.
+   * @param {Object} res - The HTTP response object.
+   * @param {Function} next - The next middleware function for error handling.
+   */
+  async getProfile(req, res, next) {
+    const { referenceId, role } = req.user;
+
+    let profile;
+    if (role === "advisor") {
+      profile = await Advisor.findById(referenceId).populate("city", "name state");
+    } else if (role === "employee" || role === "admin") {
+      profile = await Employee.findById(referenceId)
+        .populate("department", "name")
+        .populate("reportingOfficer", "name");
+    }
+
+    if (!profile) {
+      return next(ErrorResponse.notFound("Profile not found"));
+    }
+
+    return {
+      data: profile,
+      message: "Profile fetched successfully",
+    };
+  }
 }
 
 export default new UserService();

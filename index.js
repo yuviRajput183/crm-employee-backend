@@ -19,6 +19,7 @@ import advisorPayoutRoutes from "./routes/advisorPayout.route.js";
 import invoicesRoutes from "./routes/invoices.route.js";
 import receivableRoutes from "./routes/receivable.route.js";
 import payablesRoutes from "./routes/payables.route.js";
+import reportsRoutes from "./routes/reports.route.js";
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use('/api/v1/advisorPayouts', advisorPayoutRoutes);
 app.use('/api/v1/invoices', invoicesRoutes);
 app.use('/api/v1/receivables', receivableRoutes);
 app.use('/api/v1/payables', payablesRoutes);
+app.use('/api/v1/reports', reportsRoutes);
 // app.use('/api/v1/license', licenseRoutes);
 
 app.get("/", (req, res) => {

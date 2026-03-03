@@ -102,4 +102,42 @@ export const updateLoginCredentials = async (req, res, next) => {
   } catch (error) {
     return next(ErrorResponse.internalServer(error.message));
   }
-}
+};
+
+/**
+ * changePassword - Any authenticated user can change their password.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const changePassword = async (req, res, next) => {
+  const requiredFields = ["oldPassword", "newPassword", "confirmPassword"];
+  const missingFields = helperService.validateFields(requiredFields, req.body);
+
+  if (missingFields.length > 0) {
+    const errorMessage = `Missing required fields: ${missingFields.join(", ")}`;
+    return next(ErrorResponse.badRequest(errorMessage));
+  }
+  try {
+    const data = await UserService.changePassword(req, res, next);
+    if (data) return SuccessResponse.ok(res, data.message);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * getProfile - Authenticated user can fetch their own profile details.
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const getProfile = async (req, res, next) => {
+  try {
+    const data = await UserService.getProfile(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
