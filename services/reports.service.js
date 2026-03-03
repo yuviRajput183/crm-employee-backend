@@ -92,7 +92,7 @@ class ReportService {
                 product: "$lead.productType",
                 disbursalAmt: "$disbursalAmount",
                 advisor: "$advisor.name",
-                bank: "$bank.bankName",
+                bank: "$bank.name",
                 banker: "$banker.bankerName",
                 invoiceNo: "$invoiceNo",
                 invoiceDate: "$invoiceDate",
@@ -100,7 +100,7 @@ class ReportService {
                 billAmt: "$payoutAmount",
                 tdsPercentage: "$tdsPercent",
                 tdsAmt: "$tdsAmount",
-                netDueAmt: "$netReceivableAmount",
+                netDueAmt: { $subtract: ["$payoutAmount", "$tdsAmount"] },
                 receivedAmt: {
                    $cond: {
                       if: { $gt: ["$invoiceMaster.invoiceReceivableAmount", 0] },
@@ -108,7 +108,7 @@ class ReportService {
                       else: 0
                    }
                 },
-                processedBy: "$processedBy.name",
+                processedBy: "$processedBy.processedBy",
                 pendingAmt: "$invoiceMaster.remainingReceivableAmount",
                 status: {
                     $cond: {
@@ -229,7 +229,7 @@ class ReportService {
                 clientName: "$lead.clientName",
                 product: "$lead.productType",
                 advisor: "$advisor.name",
-                bank: "$bank.bankName",
+                bank: "$bank.name",
                 banker: "$banker.bankerName",
                 invoiceNo: "$invoiceNo",
                 invoiceDate: "$invoiceDate",
@@ -243,7 +243,7 @@ class ReportService {
                       else: 0
                    }
                 },
-                processedBy: "$processedBy.name",
+                processedBy: "$processedBy.processedBy",
                 pendingAmt: "$invoiceMaster.remainingGstAmount",
                 status: {
                     $cond: {
@@ -356,7 +356,7 @@ class ReportService {
                 product: "$lead.productType",
                 disbursalAmt: "$disbursalAmount",
                 advisor: "$advisor.name",
-                bank: "$bank.bankName",
+                bank: "$bank.name",
                 banker: "$banker.bankerName",
                 gstStatus: {
                     $cond: {
@@ -379,7 +379,7 @@ class ReportService {
                       else: 0
                    }
                 },
-                processedBy: "$processedBy.name",
+                processedBy: "$processedBy.processedBy",
                 pendingAmt: "$remainingPayableAmount",
                 status: {
                     $cond: {
@@ -492,7 +492,7 @@ class ReportService {
                 product: "$lead.productType",
                 disbursalAmt: "$disbursalAmount",
                 advisor: "$advisor.name",
-                bank: "$bank.bankName",
+                bank: "$bank.name",
                 banker: "$banker.bankerName",
                 invoiceNo: "$invoiceNo",
                 invoiceDate: "$invoiceDate",
@@ -506,7 +506,7 @@ class ReportService {
                       else: 0
                    }
                 },
-                processedBy: "$processedBy.name",
+                processedBy: "$processedBy.processedBy",
                 pendingAmt: "$remainingGstAmount",
                 status: {
                     $cond: {
@@ -636,7 +636,7 @@ class ReportService {
                 product: "$lead.productType",
                 disbursalAmt: "$disbursalAmount",
                 advisor: "$advisor.name",
-                bank: "$bank.bankName",
+                bank: "$bank.name",
                 banker: "$banker.bankerName",
                 disbursalMonth: {
                     $cond: {
