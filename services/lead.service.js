@@ -466,11 +466,10 @@ class LeadService {
     }
 
     const banks = await Banker.find({
-      createdBy: currentUser.groupId,
+      // createdBy: currentUser.groupId,
       city: cityId,
       product: leadType,
     }).populate("bank");
-
     const uniqueBanks = [];
     const seen = new Set();
 
@@ -513,7 +512,7 @@ class LeadService {
     }
 
     const bankers = await Banker.find({
-      createdBy: currentUser.groupId,
+      // createdBy: currentUser.groupId,
       bank: bankId,
       city: cityId,
       product: leadType,
@@ -548,11 +547,11 @@ class LeadService {
       return next(ErrorResponse.notFound("Banker not found"));
     }
 
-    if (banker.createdBy.toString() !== currentUser._id.toString()) {
-      return next(
-        ErrorResponse.forbidden("You are not authorized to view this banker")
-      );
-    }
+    // if (banker.createdBy.toString() !== currentUser._id.toString()) {
+    //   return next(
+    //     ErrorResponse.forbidden("You are not authorized to view this banker")
+    //   );
+    // }
     return {
       data: banker,
       message: "Banker fetched successfully",

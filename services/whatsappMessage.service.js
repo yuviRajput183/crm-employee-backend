@@ -1,11 +1,9 @@
 import axios from 'axios';
 
 class WhatsAppMessageService {
-    constructor() {
-        // Retrieve API credentials from environment variables
-        this.apiUrl = process.env.WHATSAPP_API_URL || 'YOUR_API_URL_HERE';
-        this.apiKey = process.env.WHATSAPP_API_KEY || 'YOUR_API_KEY_HERE';
-    }
+    get apiUrl() { return process.env.WHATSAPP_API_URL || 'YOUR_API_URL_HERE'; }
+    get apiKey() { return process.env.WHATSAPP_API_KEY || 'YOUR_API_KEY_HERE'; }
+    get wabaNumber() { return process.env.WABA_NUMBER || 'YOUR_WABA_NUMBER_HERE'; }
 
     /**
      * Send a WhatsApp message when a lead or payout state changes
@@ -20,7 +18,7 @@ class WhatsAppMessageService {
             
             // Example structure using standard Meta Cloud API / Interakt format
             const payload = {
-                to: mobileNumber,
+                to: "91" + mobileNumber,
                 type: "template",
                 template: {
                     name: templateName,
@@ -44,10 +42,11 @@ class WhatsAppMessageService {
                 payload,
                 {
                     headers: {
-                        'Authorization': `Bearer ${this.apiKey}`, 
-                        'Content-Type': 'application/json'
+                        'Key': this.apiKey, 
+                        'Content-Type': 'application/json',
+                        'wabaNumber': this.wabaNumber
                     }
-                }
+                },
             );
 
             console.log(`WhatsApp message sent successfully to ${mobileNumber} for template ${templateName}`);
@@ -57,6 +56,44 @@ class WhatsAppMessageService {
             return null; 
         }
     }
+
+    /**
+     * Send a standard text message for testing purposes via DoveSoft API
+     * @param {string} mobileNumber - The recipient's mobile number
+     * @param {string} text - The text content of the message
+     */
+    async sendTestMessage(mobileNumber, text) {
+        try {
+            const payload = {
+                "messaging_product": "whatsapp",
+                "to": "91" + mobileNumber,
+                "type": "text",
+                "recipient_type": "individual",
+                "text": {
+                    "body": text
+                }
+            };
+
+            const response = await axios.post(
+                'https://api.dovesoft.io//REST/directApi/message',
+                payload,
+                {
+                    headers: {
+                        'Key': this.apiKey,
+                        'Content-Type': 'application/json',
+                        'wabaNumber': this.wabaNumber
+                    }
+                }
+            );
+
+            console.log(`WhatsApp test message sent successfully to ${mobileNumber}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error sending WhatsApp test message:`, error?.response?.data || error.message);
+            return null;
+        }
+    }
+
 
     /**
      * 1. gst_payment
@@ -79,9 +116,15 @@ class WhatsAppMessageService {
      * 3. payout_release_ulspl
      * Variables: {{1}} Name, {{2}} Case Name, {{3}} Disbursal Amt, {{4}} Gross Payout, {{5}} TDS Amt, {{6}} Net Amt, {{7}} UTR No, {{8}} Txn Date
      */
-    async sendPayoutReleaseUlsplMessage(mobileNumber, data) {
+    async sendPayoutReleaseUlsplMessage(mobileNumbers, data) {
         const { name, caseName, disbursalAmount, grossPayout, tdsAmount, netAmount, utrNo, txnDate } = data;
-        return await this.sendWhatsAppMessage(mobileNumber, 'payout_release_ulspl', [name, caseName, disbursalAmount, grossPayout, tdsAmount, netAmount, utrNo, txnDate]);
+        const numbers = Array.isArray(mobileNumbers) ? mobileNumbers : [mobileNumbers];
+        for (const mobileNumber of numbers) {
+            if (mobileNumber) {
+                await this.sendWhatsAppMessage(mobileNumber, 'payout_release_ulspl', [name, caseName, disbursalAmount, grossPayout, tdsAmount, netAmount, utrNo, txnDate]);
+            }
+        }
+        return true;
     }
 
     /**
@@ -106,9 +149,15 @@ class WhatsAppMessageService {
      * 6. payout_made
      * Variables: {{1}} Name, {{2}} Case Name, {{3}} Product, {{4}} Disbursed Amt, {{5}} Payout %, {{6}} Payout Amt
      */
-    async sendPayoutMadeMessage(mobileNumber, data) {
+    async sendPayoutMadeMessage(mobileNumbers, data) {
         const { name, caseName, product, disbursedAmount, payoutPercent, payoutAmount } = data;
-        return await this.sendWhatsAppMessage(mobileNumber, 'payout_made', [name, caseName, product, disbursedAmount, payoutPercent, payoutAmount]);
+        const numbers = Array.isArray(mobileNumbers) ? mobileNumbers : [mobileNumbers];
+        for (const mobileNumber of numbers) {
+            if (mobileNumber) {
+                await this.sendWhatsAppMessage(mobileNumber, 'payout_made', [name, caseName, product, disbursedAmount, payoutPercent, payoutAmount]);
+            }
+        }
+        return true;
     }
 
     /**

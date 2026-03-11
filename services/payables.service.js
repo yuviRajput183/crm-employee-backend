@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 import ErrorResponse from "../lib/error.res.js";
 import AdvisorPayout from "../models/AdvisorPayout.model.js";
 import Payables from "../models/Payables.model.js";
+import Lead from "../models/Lead.model.js";
+import Employee from "../models/Employee.model.js";
+import Advisor from "../models/Advisor.model.js";
+import whatsappMessageService from "./whatsappMessage.service.js";
 
 class PayablesService {
   /**
@@ -157,6 +161,37 @@ class PayablesService {
       await payout.save({ session });
 
       await session.commitTransaction();
+
+      // Send WhatsApp Message for Payout Release
+      try {
+        const advisor = await Advisor.findById(advisorId).select("mobile name");
+        const employee = await Employee.findById(employeeId).select("mobile");
+        const lead = await Lead.findById(leadId).select("clientName");
+
+        const messageNumbers = [];
+        if (advisor && advisor.mobile) messageNumbers.push(advisor.mobile);
+        if (employee && employee.mobile) messageNumbers.push(employee.mobile);
+
+        if (messageNumbers.length > 0) {
+          const messageData = {
+            name: advisor ? advisor.name : "Advisor",
+            caseName: lead ? lead.clientName : "N/A",
+            disbursalAmount: payout.disbursalAmount || 0,
+            grossPayout: payout.payoutAmount || 0,
+            tdsAmount: payout.tdsAmount || 0,
+            netAmount: payout.netPayableAmount || 0,
+            utrNo: refNo || "N/A",
+            txnDate: paidDate ? new Date(paidDate).toLocaleDateString() : new Date().toLocaleDateString()
+          };
+          whatsappMessageService.sendPayoutReleaseUlsplMessage(messageNumbers, messageData).catch(err => {
+            console.error("Error sending WhatsApp message for Payout Release:", err);
+          });
+          console.log("WhatsApp message initiated for Payout Release");
+        }
+      } catch (msgError) {
+        console.error("Error preparing WhatsApp message for Payout Release:", msgError);
+      }
+
       return {
         data: payable,
         message: "Payable added successfully",
@@ -205,11 +240,12 @@ class PayablesService {
     if (productType) {
       filters.productType = { $regex: productType, $options: "i" };
     }
-
+    // console.log(advisorId);
     const payables = await Payables.find(filters)
       .populate("advisorId")
       .populate("leadId")
       .sort({ createdAt: -1 });
+
 
     const filteredPayables = payables.filter((payable) => {
       if (advisorName) {

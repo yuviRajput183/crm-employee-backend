@@ -2,6 +2,9 @@ import ErrorResponse from "../lib/error.res.js";
 import AdvisorPayout from "../models/AdvisorPayout.model.js";
 import Lead from "../models/Lead.model.js";
 import Payables from "../models/Payables.model.js";
+import Advisor from "../models/Advisor.model.js";
+import Employee from "../models/Employee.model.js";
+import whatsappMessageService from "./whatsappMessage.service.js";
 
 class AdvisorPayoutService {
   /**
@@ -164,6 +167,34 @@ class AdvisorPayoutService {
         { finalPayout: true },
         { new: true }
       );
+    }
+
+    try {
+      const advisor = await Advisor.findById(advisorId).select("mobile name");
+      const employee = await Employee.findById(employeeId).select("mobile");
+
+      const messageNumbers = [];
+      if (advisor && advisor.mobile) messageNumbers.push(advisor.mobile);
+      if (employee && employee.mobile) messageNumbers.push(employee.mobile);
+
+      if (messageNumbers.length > 0) {
+        const messageData = {
+          name: advisor ? advisor.name : "Advisor",
+          caseName: lead.clientName || "N/A",
+          product: lead.productType || "N/A",
+          disbursedAmount: disbursalAmount,
+          payoutPercent: payoutPercent,
+          payoutAmount: calculatedPayoutAmount
+        };
+        // Background process to send WhatsApp messages
+        whatsappMessageService.sendPayoutMadeMessage(messageNumbers, messageData).catch(err => {
+          console.error("Error sending WhatsApp message for Payout Made:", err);
+        });
+        // whatsappMessageService.sendTestMessage('919350435963', 'sample query from user?')
+        // console.log("WhatsApp message sent for Payout Made");
+      }
+    } catch (msgError) {
+      console.error("Error preparing WhatsApp message for Payout Made:", msgError);
     }
 
     return {

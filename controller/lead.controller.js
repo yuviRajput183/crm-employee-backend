@@ -393,7 +393,6 @@ export const getAllDrafts = async (req, res, next) => {
  * @param {Function} next - The next middleware function for error handling.
  */
 export const advisorLead = async (req, res, next) => {
-  console.log("-1")
   const requiredFields = [
     "clientName",
     "mobileNo",
