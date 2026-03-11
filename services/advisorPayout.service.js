@@ -161,7 +161,7 @@ class AdvisorPayoutService {
 
     await newPayout.save();
 
-    if (finalPayout) {
+    if (finalPayout !== "false") {
       await Lead.findByIdAndUpdate(
         leadId,
         { finalPayout: true },

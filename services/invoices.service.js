@@ -153,7 +153,7 @@ class InvoicesService {
       updatedBy: employeeId,
     });
 
-    if (finalInvoice) {
+    if (finalInvoice !== "false") {
       await Lead.findByIdAndUpdate(
         leadId,
         { finalInvoice: true },
