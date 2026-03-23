@@ -34,6 +34,7 @@ class ReceivableService {
         },
       },
       { $unwind: "$leadDetails" },
+      { $sort: { "leadDetails.leadNo": -1 } }
     ]);
 
     const formattedLeads = uniqueLeads.map((lead) => ({
@@ -256,7 +257,15 @@ class ReceivableService {
         totalPages,
         page,
         limit,
-        receivables: filteredReceivables.slice(skip, skip + parsedLimit),
+        receivables: filteredReceivables.slice(skip, skip + parsedLimit).map(rec => {
+          const raw = rec.toObject ? rec.toObject() : rec;
+          return {
+            ...raw,
+            receivableAmount: raw.receivableAmount ? Math.ceil(raw.receivableAmount) : 0,
+            receivedAmount: raw.receivedAmount ? Math.ceil(raw.receivedAmount) : 0,
+            balanceAmount: raw.balanceAmount ? Math.ceil(raw.balanceAmount) : 0
+          };
+        }),
       },
       message: "Receivables retrieved successfully",
     };

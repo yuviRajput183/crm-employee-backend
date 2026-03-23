@@ -21,7 +21,7 @@ class AdvisorPayoutService {
       .populate("advisorId", "_id name")
       .populate("allocatedTo", "_id name")
       .populate("createdBy", "_id name")
-      .sort({ createdAt: -1 });
+      .sort({ leadNo: -1 });
 
     const filteredLeads = leads.filter((lead) => {
       const lastEntry = lead.history[lead.history.length - 1];
@@ -287,15 +287,25 @@ class AdvisorPayoutService {
     return {
       data: {
         totals: {
-          totalPayoutAmount,
-          totalTdsAmount,
-          totalGstAmount,
-          grossAmount,
+          totalPayoutAmount: Math.ceil(totalPayoutAmount),
+          totalTdsAmount: Math.ceil(totalTdsAmount),
+          totalGstAmount: Math.ceil(totalGstAmount),
+          grossAmount: Math.ceil(grossAmount),
         },
         total: advisorPayouts.length,
         currentPage: parsedPage,
         totalPages: Math.ceil(advisorPayouts.length / parsedLimit),
-        advisorPayouts: paginatedAdvisorPayouts,
+        advisorPayouts: paginatedAdvisorPayouts.map(inv => {
+          const raw = inv.toObject ? inv.toObject() : inv;
+          return {
+            ...raw,
+            payoutAmount: raw.payoutAmount ? Math.ceil(raw.payoutAmount) : 0,
+            tdsAmount: raw.tdsAmount ? Math.ceil(raw.tdsAmount) : 0,
+            gstAmount: raw.gstAmount ? Math.ceil(raw.gstAmount) : 0,
+            netPayableAmount: raw.netPayableAmount ? Math.ceil(raw.netPayableAmount) : 0,
+            disbursalAmount: raw.disbursalAmount ? Math.ceil(raw.disbursalAmount) : 0
+          };
+        }),
       },
       message: "Advisor Payouts retrieved successfully",
     };

@@ -204,7 +204,7 @@ class LeadService {
       percentageStats[key] = {
         count,
         percentage:
-          totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(2) + "%" : "0%",
+          totalLeads > 0 ? Math.ceil((count / totalLeads) * 100) + "%" : "0%",
       };
     });
 
@@ -667,7 +667,7 @@ class LeadService {
       percentageStats[key] = {
         count,
         percentage:
-          totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(2) + "%" : "0%",
+          totalLeads > 0 ? Math.ceil((count / totalLeads) * 100) + "%" : "0%",
       };
     });
 
@@ -1102,7 +1102,7 @@ class LeadService {
       percentageStats[key] = {
         count,
         percentage:
-          totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(2) + "%" : "0%",
+          totalLeads > 0 ? Math.ceil((count / totalLeads) * 100) + "%" : "0%",
       };
     });
 
@@ -1234,9 +1234,9 @@ class LeadService {
 
     const stats = {
       totalLeads,
-      percentageUnderProcess: totalLeads > 0 ? ((underProcessCount / totalLeads) * 100).toFixed(2) : "0.00",
-      percentageApproved: totalLeads > 0 ? ((approvedCount / totalLeads) * 100).toFixed(2) : "0.00",
-      percentageDisbursed: totalLeads > 0 ? ((disbursedCount / totalLeads) * 100).toFixed(2) : "0.00",
+      percentageUnderProcess: totalLeads > 0 ? Math.ceil((underProcessCount / totalLeads) * 100) : 0,
+      percentageApproved: totalLeads > 0 ? Math.ceil((approvedCount / totalLeads) * 100) : 0,
+      percentageDisbursed: totalLeads > 0 ? Math.ceil((disbursedCount / totalLeads) * 100) : 0,
       totalDisbursalAmount,
       totalDisbursalAmountThisMonth,
       totalDisbursalAmountThisYear,

@@ -591,7 +591,7 @@ class ReportService {
             {
                 $lookup: {
                     from: "employees",
-                    localField: "lead.employeeId",
+                    localField: "lead.allocatedTo",
                     foreignField: "_id",
                     as: "employee"
                 }
@@ -646,25 +646,29 @@ class ReportService {
                     }
                 },
                 employee: "$employee.name",
-                grossRecd: { $ifNull: ["$payoutAmount", 0] },
-                grossPaid: { $sum: "$payouts.payoutAmount" },
+                grossRecd: { $ceil: { $ifNull: ["$payoutAmount", 0] } },
+                grossPaid: { $ceil: { $sum: "$payouts.payoutAmount" } },
                 grossProfit: {
-                    $subtract: [
-                        { $ifNull: ["$payoutAmount", 0] },
-                        { $sum: "$payouts.payoutAmount" }
-                    ]
+                    $ceil: {
+                        $subtract: [
+                            { $ifNull: ["$payoutAmount", 0] },
+                            { $sum: "$payouts.payoutAmount" }
+                        ]
+                    }
                 },
-                tdsPaid: { $ifNull: ["$tdsAmount", 0] },
-                tdsDeducted: { $sum: "$payouts.tdsAmount" },
-                netRecd: { $ifNull: ["$netReceivableAmount", 0] },
-                netPaid: { $sum: "$payouts.netPayableAmount" },
+                tdsPaid: { $ceil: { $ifNull: ["$tdsAmount", 0] } },
+                tdsDeducted: { $ceil: { $sum: "$payouts.tdsAmount" } },
+                netRecd: { $ceil: { $ifNull: ["$netReceivableAmount", 0] } },
+                netPaid: { $ceil: { $sum: "$payouts.netPayableAmount" } },
                 cashProfit: {
-                    $subtract: [
-                        { $ifNull: ["$netReceivableAmount", 0] },
-                        { $sum: "$payouts.netPayableAmount" }
-                    ]
+                    $ceil: {
+                        $subtract: [
+                            { $ifNull: ["$netReceivableAmount", 0] },
+                            { $sum: "$payouts.netPayableAmount" }
+                        ]
+                    }
                 },
-                processedBy: "$processedBy.name"
+                processedBy: "$processedBy.processedBy"
             }
         });
 

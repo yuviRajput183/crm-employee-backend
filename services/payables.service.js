@@ -34,6 +34,7 @@ class PayablesService {
         },
       },
       { $unwind: "$leadDetails" },
+      { $sort: { "leadDetails.leadNo": -1 } }
     ]);
 
     const formattedLeads = uniqueLeads.map((lead) => ({
@@ -270,7 +271,15 @@ class PayablesService {
         totalPages,
         page,
         limit,
-        payables: filteredPayables.slice(skip, skip + parsedLimit),
+        payables: filteredPayables.slice(skip, skip + parsedLimit).map(payable => {
+          const raw = payable.toObject ? payable.toObject() : payable;
+          return {
+            ...raw,
+            payableAmount: raw.payableAmount ? Math.ceil(raw.payableAmount) : 0,
+            paidAmount: raw.paidAmount ? Math.ceil(raw.paidAmount) : 0,
+            balanceAmount: raw.balanceAmount ? Math.ceil(raw.balanceAmount) : 0
+          };
+        }),
       },
       message: "Payables retrieved successfully",
     };
@@ -519,9 +528,18 @@ class PayablesService {
       },
       { totalDisbursal: 0, totalPayout: 0, paidAmount: 0, pendingAmount: 0 }
     );
+    stats.totalDisbursal = Math.ceil(stats.totalDisbursal);
+    stats.totalPayout = Math.ceil(stats.totalPayout);
+    stats.paidAmount = Math.ceil(stats.paidAmount);
+    stats.pendingAmount = Math.ceil(stats.pendingAmount);
 
     const totalCount = processedPayables.length;
-    const paginatedData = processedPayables.slice(skip, skip + parsedLimit);
+    const paginatedData = processedPayables.slice(skip, skip + parsedLimit).map(p => ({
+      ...p,
+      payableAmount: p.payableAmount ? Math.ceil(p.payableAmount) : 0,
+      paidAmount: p.paidAmount ? Math.ceil(p.paidAmount) : 0,
+      balanceAmount: p.balanceAmount ? Math.ceil(p.balanceAmount) : 0
+    }));
 
     return {
       data: {

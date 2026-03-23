@@ -21,7 +21,7 @@ class InvoicesService {
       .populate("advisorId", "_id name")
       .populate("allocatedTo", "_id name")
       .populate("createdBy", "_id name")
-      .sort({ createdAt: -1 });
+      .sort({ leadNo: -1 });
 
     const filteredLeads = leads.filter((lead) => {
       const lastEntry = lead.history[lead.history.length - 1];
@@ -283,15 +283,22 @@ class InvoicesService {
     return {
       data: {
         totals: {
-          totalPayoutAmount,
-          totalTdsAmount,
-          totalGstAmount,
-          grossAmount,
+          totalPayoutAmount: Math.ceil(totalPayoutAmount),
+          totalTdsAmount: Math.ceil(totalTdsAmount),
+          totalGstAmount: Math.ceil(totalGstAmount),
+          grossAmount: Math.ceil(grossAmount),
         },
         total: invoices.length,
         currentPage: parsedPage,
         totalPages: Math.ceil(invoices.length / parsedLimit),
-        invoices: paginatedInvoices,
+        invoices: paginatedInvoices.map(inv => ({
+          ...inv,
+          payoutAmount: inv.payoutAmount ? Math.ceil(inv.payoutAmount) : 0,
+          tdsAmount: inv.tdsAmount ? Math.ceil(inv.tdsAmount) : 0,
+          gstAmount: inv.gstAmount ? Math.ceil(inv.gstAmount) : 0,
+          netReceivableAmount: inv.netReceivableAmount ? Math.ceil(inv.netReceivableAmount) : 0,
+          disbursalAmount: inv.disbursalAmount ? Math.ceil(inv.disbursalAmount) : 0
+        })),
       },
       message: "Invoices retrieved successfully",
     };
