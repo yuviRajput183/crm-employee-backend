@@ -375,9 +375,10 @@ class LeadService {
       existingLead.documents = existingLead.documents ? [...existingLead.documents, ...newDocs] : newDocs;
     }
 
-    // attach banker details if feedback last field is "loan disbursed"
-    if (updates.feedback === "Loan Disbursed" && updates.bankerId) {
-      existingLead.bankerId = updates.bankerId;
+    // attach banker details and disbursal dates if feedback last field is "loan disbursed"
+    if (updates.feedback === "Loan Disbursed") {
+      if (updates.bankerId) existingLead.bankerId = updates.bankerId;
+      if (updates.disbursalDate) existingLead.disbursalDate = new Date(updates.disbursalDate);
     }
 
     for (const key in updates) {
