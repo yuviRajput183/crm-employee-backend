@@ -379,7 +379,7 @@ class PayablesService {
       if (paidAmount < 0)
         return next(ErrorResponse.badRequest("Paid amount cannot be negative"));
 
-      if (paidAmount > payable.payableAmount)
+      if (Number(paidAmount) > Number(payable.payableAmount))
         return next(
           ErrorResponse.badRequest("Paid amount cannot exceed payable amount")
         );

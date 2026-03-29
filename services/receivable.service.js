@@ -361,7 +361,7 @@ class ReceivableService {
       return next(ErrorResponse.notFound("Invoice Master not found"));
     }
 
-    const { receivedAmount, paidDate, refNo, remarks, totalAmount } = req.body;
+    const { receivedAmount, paidDate, refNo, remarks, totalAmount, receivableAmount } = req.body;
 
     const oldReceivedAmount = receivable.receivedAmount;
 
@@ -369,7 +369,9 @@ class ReceivableService {
     if (paidDate !== undefined) receivable.paidDate = paidDate;
     if (refNo !== undefined) receivable.refNo = refNo;
     if (remarks !== undefined) receivable.remarks = remarks;
-    receivable.receivableAmount = totalAmount;
+    
+    const newReceivableAmount = receivableAmount !== undefined ? receivableAmount : totalAmount;
+    if (newReceivableAmount !== undefined) receivable.receivableAmount = newReceivableAmount;
 
     if (receivedAmount !== undefined && receivedAmount !== oldReceivedAmount) {
       if (receivedAmount < 0)
@@ -377,7 +379,7 @@ class ReceivableService {
           ErrorResponse.badRequest("Received amount cannot be negative"),
         );
 
-      if (receivedAmount > totalAmount)
+      if (Number(receivedAmount) > Number(newReceivableAmount))
         return next(
           ErrorResponse.badRequest(
             "Received amount cannot exceed receivable amount",
