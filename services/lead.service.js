@@ -1235,8 +1235,11 @@ class LeadService {
 
     const stats = {
       totalLeads,
+      underProcessCount,
       percentageUnderProcess: totalLeads > 0 ? Math.ceil((underProcessCount / totalLeads) * 100) : 0,
+      approvedCount,
       percentageApproved: totalLeads > 0 ? Math.ceil((approvedCount / totalLeads) * 100) : 0,
+      disbursedCount,
       percentageDisbursed: totalLeads > 0 ? Math.ceil((disbursedCount / totalLeads) * 100) : 0,
       totalDisbursalAmount,
       totalDisbursalAmountThisMonth,
