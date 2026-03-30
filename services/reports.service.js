@@ -133,10 +133,21 @@ class ReportService {
         const in_db = await Invoice.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
         
+        const totals = in_db.reduce((acc, curr) => {
+            acc.disbursalAmt += (curr.disbursalAmt || 0);
+            acc.billAmt += (curr.billAmt || 0);
+            acc.tdsAmt += (curr.tdsAmt || 0);
+            acc.netDueAmt += (curr.netDueAmt || 0);
+            acc.receivedAmt += (curr.receivedAmt || 0);
+            acc.pendingAmt += (curr.pendingAmt || 0);
+            return acc;
+        }, { disbursalAmt: 0, billAmt: 0, tdsAmt: 0, netDueAmt: 0, receivedAmt: 0, pendingAmt: 0 });
+
         return {
             totalData: in_db.length,
             totalPages: Math.ceil(in_db.length / limit),
             currentPage: page,
+            totals: totals,
             data: paginatedData
         };
     }
@@ -268,10 +279,19 @@ class ReportService {
         const in_db = await Invoice.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
         
+        const totals = in_db.reduce((acc, curr) => {
+            acc.billAmt += (curr.billAmt || 0);
+            acc.gstAmt += (curr.gstAmt || 0);
+            acc.receivedAmt += (curr.receivedAmt || 0);
+            acc.pendingAmt += (curr.pendingAmt || 0);
+            return acc;
+        }, { billAmt: 0, gstAmt: 0, receivedAmt: 0, pendingAmt: 0 });
+
         return {
             totalData: in_db.length,
             totalPages: Math.ceil(in_db.length / limit),
             currentPage: page,
+            totals: totals,
             data: paginatedData
         };
     }
@@ -404,10 +424,21 @@ class ReportService {
         const in_db = await AdvisorPayout.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
         
+        const totals = in_db.reduce((acc, curr) => {
+            acc.disbursalAmt += (curr.disbursalAmt || 0);
+            acc.billAmt += (curr.billAmt || 0);
+            acc.tdsAmt += (curr.tdsAmt || 0);
+            acc.netDueAmt += (curr.netDueAmt || 0);
+            acc.paidAmt += (curr.paidAmt || 0);
+            acc.pendingAmt += (curr.pendingAmt || 0);
+            return acc;
+        }, { disbursalAmt: 0, billAmt: 0, tdsAmt: 0, netDueAmt: 0, paidAmt: 0, pendingAmt: 0 });
+
         return {
             totalData: in_db.length,
             totalPages: Math.ceil(in_db.length / limit),
             currentPage: page,
+            totals: totals,
             data: paginatedData
         };
     }
@@ -531,10 +562,20 @@ class ReportService {
         const in_db = await AdvisorPayout.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
         
+        const totals = in_db.reduce((acc, curr) => {
+            acc.disbursalAmt += (curr.disbursalAmt || 0);
+            acc.billAmt += (curr.billAmt || 0);
+            acc.gstAmt += (curr.gstAmt || 0);
+            acc.paidAmt += (curr.paidAmt || 0);
+            acc.pendingAmt += (curr.pendingAmt || 0);
+            return acc;
+        }, { disbursalAmt: 0, billAmt: 0, gstAmt: 0, paidAmt: 0, pendingAmt: 0 });
+
         return {
             totalData: in_db.length,
             totalPages: Math.ceil(in_db.length / limit),
             currentPage: page,
+            totals: totals,
             data: paginatedData
         };
     }
@@ -677,10 +718,24 @@ class ReportService {
         const in_db = await Invoice.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
         
+        const totals = in_db.reduce((acc, curr) => {
+            acc.disbursalAmt += (curr.disbursalAmt || 0);
+            acc.grossRecd += (curr.grossRecd || 0);
+            acc.grossPaid += (curr.grossPaid || 0);
+            acc.grossProfit += (curr.grossProfit || 0);
+            acc.tdsPaid += (curr.tdsPaid || 0);
+            acc.tdsDeducted += (curr.tdsDeducted || 0);
+            acc.netRecd += (curr.netRecd || 0);
+            acc.netPaid += (curr.netPaid || 0);
+            acc.cashProfit += (curr.cashProfit || 0);
+            return acc;
+        }, { disbursalAmt: 0, grossRecd: 0, grossPaid: 0, grossProfit: 0, tdsPaid: 0, tdsDeducted: 0, netRecd: 0, netPaid: 0, cashProfit: 0 });
+
         return {
             totalData: in_db.length,
             totalPages: Math.ceil(in_db.length / limit),
             currentPage: page,
+            totals: totals,
             data: paginatedData
         };
     }
