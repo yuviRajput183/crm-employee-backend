@@ -119,6 +119,7 @@ const draftSchema = new mongoose.Schema({
   description: String,
   amount: Number,
 
+  lanApplicationNo: String,
 
   advisorId: {
     type: mongoose.Schema.Types.ObjectId,

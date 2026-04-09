@@ -315,12 +315,17 @@ class LeadService {
 
     const newHistoryEntry = {};
     let shouldAddHistory = false;
+
+    const lastFeedback = existingLead.history?.length > 0 
+      ? existingLead.history[existingLead.history.length - 1].feedback 
+      : (existingLead.feedback || "Allocated");
+
     if (
       updates.allocatedTo &&
       updates.allocatedTo !== existingLead.allocatedTo?.toString()
     ) {
       newHistoryEntry.feedback =
-        updates.feedback || existingLead.feedback || "";
+        updates.feedback || lastFeedback;
       newHistoryEntry.commentBy = employee.name;
       newHistoryEntry.commentDate = moment().format("DD/MM/YYYY-hh:mm A");
       newHistoryEntry.remarks = "Re-allocated";
@@ -330,7 +335,7 @@ class LeadService {
     } else if (updates.feedback || updates.remarks) {
       newHistoryEntry.feedback = updates.feedback
         ? updates.feedback
-        : existingLead.feedback;
+        : lastFeedback;
       newHistoryEntry.commentBy = employee.name;
       newHistoryEntry.commentDate = moment().format("DD/MM/YYYY-hh:mm A");
       newHistoryEntry.remarks = updates.remarks || "";

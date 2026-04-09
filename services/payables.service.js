@@ -496,6 +496,7 @@ class PayablesService {
     const payables = await Payables.find(filters)
       .populate("advisorId")
       .populate("leadId")
+      .populate("payoutId")
       .sort({ createdAt: -1 });
     let processedPayables = payables.map((p) => {
       const payableObj = p.toObject();

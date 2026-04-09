@@ -139,6 +139,7 @@ const leadSchema = new mongoose.Schema({
   amount: Number,
 
   disbursalDate: Date,
+  lanApplicationNo: String,
 
   finalPayout: {
     type: Boolean,
