@@ -132,7 +132,7 @@ class AdvisorService {
    * @param {Function} next - The next middleware function for error handling.
    */
   async fetchAllAdvisors(req, res, next) {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10000 } = req.query;
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
     const skip = (parsedPage - 1) * parsedLimit;
