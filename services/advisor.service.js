@@ -153,7 +153,7 @@ class AdvisorService {
         .populate("reportingOfficer", "name _id")
         .skip(skip)
         .limit(parsedLimit)
-        .sort({ createdAt: -1 });
+        .sort({ advisorCode: -1 });
 
       totalCount = await Advisor.countDocuments({
         groupId: currentEmployee.groupId,
@@ -165,7 +165,7 @@ class AdvisorService {
         .populate("reportingOfficer", "name _id")
         .skip(skip)
         .limit(parsedLimit)
-        .sort({ createdAt: -1 });
+        .sort({ advisorCode: -1 });
 
       totalCount = await Advisor.countDocuments({ createdBy: currentUserId });
     }
