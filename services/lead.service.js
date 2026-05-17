@@ -1222,16 +1222,24 @@ class LeadService {
 
         totalDisbursalAmount += amount;
 
-        // Parse commentDate (format: DD/MM/YYYY-hh:mm A)
-        const dateString = lastHistory.commentDate?.split('-')[0];
-        if (dateString) {
-          const [day, month, year] = dateString.split('/').map(Number);
-          const date = new Date(year, month - 1, day);
+        if (lastHistory.commentDate) {
+          let date = new Date(lastHistory.commentDate);
 
-          if (date.getFullYear() === currentYear) {
-            totalDisbursalAmountThisYear += amount;
-            if (date.getMonth() === currentMonth) {
-              totalDisbursalAmountThisMonth += amount;
+          // Fallback for older "DD/MM/YYYY-hh:mm A" format if standard parsing fails
+          if (isNaN(date.getTime())) {
+            const dateString = lastHistory.commentDate.split('-')[0];
+            if (dateString && dateString.includes('/')) {
+              const [day, month, year] = dateString.split('/').map(Number);
+              date = new Date(year, month - 1, day);
+            }
+          }
+
+          if (!isNaN(date.getTime())) {
+            if (date.getFullYear() === currentYear) {
+              totalDisbursalAmountThisYear += amount;
+              if (date.getMonth() === currentMonth) {
+                totalDisbursalAmountThisMonth += amount;
+              }
             }
           }
         }

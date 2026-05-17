@@ -128,7 +128,7 @@ class ReportService {
             });
         }
 
-        pipeline.push({ $sort: { invoiceDate: -1 } });
+        pipeline.push({ $sort: { leadNo: -1, invoiceDate: -1 } });
         
         const in_db = await Invoice.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
@@ -274,7 +274,7 @@ class ReportService {
             });
         }
 
-        pipeline.push({ $sort: { invoiceDate: -1 } });
+        pipeline.push({ $sort: { leadNo: -1, invoiceDate: -1 } });
         
         const in_db = await Invoice.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
@@ -419,7 +419,7 @@ class ReportService {
             });
         }
 
-        pipeline.push({ $sort: { invoiceDate: -1 } });
+        pipeline.push({ $sort: { leadNo: -1, invoiceDate: -1 } });
         
         const in_db = await AdvisorPayout.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
@@ -557,7 +557,7 @@ class ReportService {
             });
         }
 
-        pipeline.push({ $sort: { invoiceDate: -1 } });
+        pipeline.push({ $sort: { leadNo: -1, invoiceDate: -1 } });
         
         const in_db = await AdvisorPayout.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);
@@ -713,7 +713,7 @@ class ReportService {
             }
         });
 
-        pipeline.push({ $sort: { disbursalDate: -1 } });
+        pipeline.push({ $sort: { leadNo: -1, disbursalDate: -1 } });
         
         const in_db = await Invoice.aggregate(pipeline);
         const paginatedData = in_db.slice((page - 1) * limit, page * limit);

@@ -235,7 +235,7 @@ class AdvisorPayoutService {
     let advisorPayouts = await AdvisorPayout.find(filters)
       .populate("advisorId")
       .populate("leadId")
-      .sort({ createdAt: -1 });
+      .sort({ leadId: -1, createdAt: -1 });
 
     if (loanServiceType) {
       advisorPayouts = advisorPayouts.filter((payout) =>

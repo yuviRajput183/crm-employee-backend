@@ -247,6 +247,15 @@ class ReceivableService {
       return match;
     });
 
+    filteredReceivables.sort((a, b) => {
+      const leadNoA = a.leadId?.leadNo || 0;
+      const leadNoB = b.leadId?.leadNo || 0;
+      if (leadNoA !== leadNoB) {
+        return leadNoB - leadNoA;
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
     const totalCount = filteredReceivables.length;
     let totalPages = Math.ceil(totalCount / parsedLimit);
     if (totalPages === 0) totalPages = 1;

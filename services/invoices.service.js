@@ -228,7 +228,7 @@ class InvoicesService {
           }),
         },
       },
-      { $sort: { createdAt: -1 } },
+      { $sort: { "lead.leadNo": -1, createdAt: -1 } },
       { $skip: skip },
       { $limit: parsedLimit },
       {

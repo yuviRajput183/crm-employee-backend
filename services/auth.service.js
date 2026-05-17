@@ -40,11 +40,11 @@ class AuthService {
         ownerId: profile.ownerId,
       };
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
-        expiresIn: "7d",
+        expiresIn: "1h",
       });
       res.cookie("token", token, {
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60,
         secure: true,
         sameSite: "None",
       });
