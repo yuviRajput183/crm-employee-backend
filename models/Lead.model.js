@@ -17,6 +17,7 @@ const referenceSchema = new mongoose.Schema({
 
 const documentSchema = new mongoose.Schema({
   attachmentType: String,
+  documentNo: String,
   fileUrl: String,
   password: String
 }, { _id: false });
@@ -186,6 +187,6 @@ const leadSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const Lead = mongoose.models.Lead || mongoose.model("Lead", leadSchema);
+const Lead = mongoose.model("Lead", leadSchema);
 
 export default Lead;

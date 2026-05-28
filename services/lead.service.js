@@ -1205,7 +1205,7 @@ class LeadService {
 
       if (feedback === "Under Process") {
         underProcessCount++;
-      } else if (feedback === "Approved") {
+      } else if (feedback === "Loan Approved") {
         approvedCount++;
       } else if (feedback === "Loan Disbursed" || feedback === "Policy Issued" || feedback === "Invoice Raised") {
         disbursedCount++;
