@@ -4,6 +4,7 @@ import Bank from "../models/Bank.model.js";
 import City from "../models/City.model.js";
 import Department from "../models/Department.model.js";
 import Employee from "../models/Employee.model.js";
+import helperService from "./helper.service.js";
 
 class AdvisorService {
   /**
@@ -72,15 +73,8 @@ class AdvisorService {
     }
 
     // Generate advisor code like DSA001, ADV002
-    const latestAdvisor = await Advisor.findOne()
-      .sort({ createdAt: -1 })
-      .select("advisorCode");
-
-    let advisorCode = "DSA001";
-    if (latestAdvisor && latestAdvisor.advisorCode) {
-      const num = parseInt(latestAdvisor.advisorCode.replace("DSA", ""));
-      advisorCode = "DSA" + (num + 1).toString().padStart(3, "0");
-    }
+    const seqNum = await helperService.getNextSequence("advisorSerial");
+    const advisorCode = "DSA" + seqNum.toString().padStart(3, "0");
 
     let photoUrl = "";
     if (req.file) {

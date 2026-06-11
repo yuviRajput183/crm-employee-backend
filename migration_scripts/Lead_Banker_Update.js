@@ -95,7 +95,7 @@ const cleanValue = (value) => {
 
 console.log("📄 Reading CSV File...");
 
-fs.createReadStream("./migration_data/Lead_banker_details.csv")
+fs.createReadStream("./migration_data/Lead_banker_details1.csv")
   .pipe(csv())
   .on("data", (data) => {
     rows.push(data);

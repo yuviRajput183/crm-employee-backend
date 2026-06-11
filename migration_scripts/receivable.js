@@ -89,7 +89,7 @@ const escapeRegex = (text) => {
 
 console.log("📄 Reading CSV File...");
 
-fs.createReadStream("./migration_data/Receivable_data.csv")
+fs.createReadStream("./migration_data/Receivable_data1.csv")
   .pipe(csv())
   .on("data", (data) => {
     rows.push(data);

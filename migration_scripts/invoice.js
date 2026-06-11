@@ -119,7 +119,7 @@ const addSkippedRow = ({ row, reason, extra = {} }) => {
 
 console.log("📄 Reading CSV File...");
 
-fs.createReadStream("./migration_data/Invoice_data.csv")
+fs.createReadStream("./migration_data/Invoice_data1.csv")
   .pipe(csv())
   .on("data", (data) => {
     rows.push(data);
