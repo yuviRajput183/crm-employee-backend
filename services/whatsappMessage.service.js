@@ -3,7 +3,7 @@ import axios from 'axios';
 class WhatsAppMessageService {
     get apiUrl() { return process.env.WHATSAPP_API_URL || 'YOUR_API_URL_HERE'; }
     get apiKey() { return process.env.WHATSAPP_API_KEY || 'YOUR_API_KEY_HERE'; }
-    get wabaNumber() { return process.env.WABA_NUMBER || 'YOUR_WABA_NUMBER_HERE'; }
+    get wabaNumber() { return process.env.WHATSAPP_WABANUMBER || 'YOUR_WABA_NUMBER_HERE'; }
 
     /**
      * Send a WhatsApp message when a lead or payout state changes
