@@ -384,7 +384,9 @@ class AdvisorService {
 
     if (user.isOwner) {
       // Super Admin: get all advisors of the group
-      advisors = await Advisor.find({ groupId: user._id, isActive: true }).select("name _id advisorCode");
+      advisors = await Advisor.find({ groupId: user._id, isActive: true })
+        .select("name _id advisorCode")
+        .sort({ advisorCode: -1 });
     } else {
       const department = await Department.findById(user.department).select(
         "name"
@@ -396,13 +398,15 @@ class AdvisorService {
 
       if (isAdmin) {
         // Admin: get advisors created by him
-        advisors = await Advisor.find({ createdBy: user._id, isActive: true }).select(
-          "name _id advisorCode"
-        );
+        advisors = await Advisor.find({ createdBy: user._id, isActive: true })
+          .select("name _id advisorCode")
+          .sort({ advisorCode: -1 });
       } else {
         // Normal Employee: Get all the advisors whose reporting officer is same as reporting officer of the logged in employee.
 
-        advisors = await Advisor.find({ reportingOfficer: user.reportingOfficer, isActive: true }).select("name _id advisorCode");
+        advisors = await Advisor.find({ reportingOfficer: user.reportingOfficer, isActive: true })
+          .select("name _id advisorCode")
+          .sort({ advisorCode: -1 });
       }
     }
 
