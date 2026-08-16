@@ -2,6 +2,7 @@ import SuccessResponse from "../lib/success.res.js";
 import ErrorResponse from "../lib/error.res.js";
 import advisorService from "../services/advisor.service.js";
 import helperService from "../services/helper.service.js";
+import surepassService from "../services/surepass.service.js";
 
 /**
  * createAdvisor - Create a new advisor.
@@ -129,6 +130,26 @@ export const getAdvisorsForDropdown = async (req, res, next) => {
     const data = await advisorService.getAdvisorsForDropdown(req, res, next);
     if (data) return SuccessResponse.ok(res, data.message, data.data);
   } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+}
+
+/**
+ * verifyPan - Verify a PAN number using Surepass API
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function.
+ */
+export const verifyPan = async (req, res, next) => {
+  try {
+    const { pan_number } = req.body;
+    if (!pan_number) {
+        return next(ErrorResponse.badRequest("PAN number is required"));
+    }
+    const data = await surepassService.verifyPanComprehensive(pan_number);
+    return SuccessResponse.ok(res, "PAN verified successfully", data);
+  } catch (error) {
+    console.error("verifyPan controller error:", error);
     return next(ErrorResponse.internalServer(error.message));
   }
 }
