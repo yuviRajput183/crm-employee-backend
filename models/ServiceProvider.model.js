@@ -40,6 +40,11 @@ const serviceProviderSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
+        location: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Location",
+            required: [true, "Location is required"],
+        },
     },
     {
         timestamps: true,

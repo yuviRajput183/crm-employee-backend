@@ -39,13 +39,7 @@ const locationSchema = new mongoose.Schema(
       type: String,
       description: "The job title/position of that person",
     },
-    stamp: {
-      type: String,
-      trim: true,
-      default: null,
-    },
-
-    signature: {
+    stampAndSign: {
       type: String,
       trim: true,
       default: null,

@@ -3,10 +3,8 @@ import path from "path";
 
 const stampSignStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (file.fieldname === "stamp") {
+    if (file.fieldname === "stampAndSign") {
       cb(null, "uploads/stamps/");
-    } else if (file.fieldname === "sign") {
-      cb(null, "uploads/signatures/");
     }
   },
 
@@ -20,7 +18,4 @@ export const uploadStampAndSign = multer({
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
-}).fields([
-  { name: "stamp", maxCount: 1 },
-  { name: "sign", maxCount: 1 },
-]);
+}).single("stampAndSign");

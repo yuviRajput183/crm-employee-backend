@@ -22,6 +22,7 @@ import payablesRoutes from "./routes/payables.route.js";
 import reportsRoutes from "./routes/reports.route.js";
 import locationRoutes from "./routes/location.route.js";
 import serviceProviderRoutes from "./routes/serviceProvider.route.js";
+import productRoutes from "./routes/product.route.js";
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ app.use('/api/v1/reports', reportsRoutes);
 // app.use('/api/v1/license', licenseRoutes);
 app.use('/api/v1/locations', locationRoutes);
 app.use('/api/v1/service-providers', serviceProviderRoutes);
+app.use('/api/v1/products', productRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

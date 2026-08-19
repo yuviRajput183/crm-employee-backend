@@ -13,8 +13,13 @@ class ServiceProviderService {
                 stateCode,
                 gstin,
                 code,
-                billingFormat,
+                location,
             } = req.body;
+            
+            let billingFormat = req.body.billingFormat;
+            if (req.file) {
+                billingFormat = req.file.path.replace(/\\/g, "/");
+            }
 
             const newServiceProvider = new ServiceProvider({
                 legalName,
@@ -26,6 +31,7 @@ class ServiceProviderService {
                 gstin,
                 code,
                 billingFormat,
+                location,
             });
 
             await newServiceProvider.save();
@@ -42,7 +48,7 @@ class ServiceProviderService {
 
     async getServiceProviders(req, res, next) {
         try {
-            const providers = await ServiceProvider.find().sort({ createdAt: -1 });
+            const providers = await ServiceProvider.find().populate("location").sort({ createdAt: -1 });
             return res.status(200).json({
                 success: true,
                 count: providers.length,
@@ -55,7 +61,7 @@ class ServiceProviderService {
 
     async getServiceProviderById(req, res, next) {
         try {
-            const provider = await ServiceProvider.findById(req.params.id);
+            const provider = await ServiceProvider.findById(req.params.id).populate("location");
             if (!provider) {
                 return next(ErrorResponse.notFound("Service Provider not found"));
             }
@@ -71,7 +77,11 @@ class ServiceProviderService {
     async updateServiceProvider(req, res, next) {
         try {
             const { id } = req.params;
-            const updateData = req.body;
+            const updateData = { ...req.body };
+            
+            if (req.file) {
+                updateData.billingFormat = req.file.path.replace(/\\/g, "/");
+            }
 
             let provider = await ServiceProvider.findById(id);
             if (!provider) {

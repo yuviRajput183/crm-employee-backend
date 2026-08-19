@@ -24,16 +24,10 @@ class LocationService {
                 return next(ErrorResponse.badRequest("Mobile number already exists"));
             }
 
-            let stamp = null;
-            let signature = null;
+            let stampAndSign = null;
 
-            if (req.files) {
-                if (req.files.stamp && req.files.stamp.length > 0) {
-                    stamp = req.files.stamp[0].filename;
-                }
-                if (req.files.sign && req.files.sign.length > 0) {
-                    signature = req.files.sign[0].filename;
-                }
+            if (req.file) {
+                stampAndSign = req.file.filename;
             }
 
             const newLocation = new Location({
@@ -45,8 +39,7 @@ class LocationService {
                 email,
                 authorizedSignatoryName,
                 authorizedSignatoryDesignation,
-                stamp,
-                signature,
+                stampAndSign,
                 accountHolderName,
                 accountNumber,
                 ifscCode,
@@ -122,16 +115,10 @@ class LocationService {
                 }
             }
 
-            let stamp = location.stamp;
-            let signature = location.signature;
+            let stampAndSign = location.stampAndSign;
 
-            if (req.files) {
-                if (req.files.stamp && req.files.stamp.length > 0) {
-                    stamp = req.files.stamp[0].filename;
-                }
-                if (req.files.sign && req.files.sign.length > 0) {
-                    signature = req.files.sign[0].filename;
-                }
+            if (req.file) {
+                stampAndSign = req.file.filename;
             }
 
             location.name = name || location.name;
@@ -142,8 +129,7 @@ class LocationService {
             location.email = email || location.email;
             location.authorizedSignatoryName = authorizedSignatoryName !== undefined ? authorizedSignatoryName : location.authorizedSignatoryName;
             location.authorizedSignatoryDesignation = authorizedSignatoryDesignation !== undefined ? authorizedSignatoryDesignation : location.authorizedSignatoryDesignation;
-            location.stamp = stamp;
-            location.signature = signature;
+            location.stampAndSign = stampAndSign;
             location.accountHolderName = accountHolderName !== undefined ? accountHolderName : location.accountHolderName;
             location.accountNumber = accountNumber !== undefined ? accountNumber : location.accountNumber;
             location.ifscCode = ifscCode !== undefined ? ifscCode : location.ifscCode;
