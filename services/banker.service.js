@@ -93,15 +93,24 @@ class BankerService {
    */
   async listBankers(req, res, next) {
     const userId = req.user.referenceId;
+    const { stateName, city } = req.query;
 
     const currentUser = await Employee.findById(userId);
     if (!currentUser) {
       return next(ErrorResponse.notFound("Logged-in employee not found"));
     }
 
-    const bankers = await Banker.find({
-      groupId: currentUser.groupId,
-    })
+    const query = { groupId: currentUser.groupId };
+    
+    if (stateName) {
+      query.stateName = stateName;
+    }
+    
+    if (city) {
+      query.city = city;
+    }
+
+    const bankers = await Banker.find(query)
       .populate("city", "cityName stateName")
       .populate("bank", "name")
       .sort({ createdAt: -1 });

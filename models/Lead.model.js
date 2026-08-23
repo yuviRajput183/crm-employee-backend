@@ -179,10 +179,24 @@ const leadSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Employee',
   },
+  // stageNumber: {
+  //   type: Number,
+  //   default: 1
+  // },
+  // bankerCaseLocationDetailsId: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "BankerCaseLocationDetails"
+  // },
+  // confirmationStageId: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "ConfirmationStage"
+  // },
   // createdAt: { 
   //   type: Date, 
   //   default: Date.now 
-  // }
+  // },
+
+
 }, {
   timestamps: true
 });

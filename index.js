@@ -23,6 +23,9 @@ import reportsRoutes from "./routes/reports.route.js";
 import locationRoutes from "./routes/location.route.js";
 import serviceProviderRoutes from "./routes/serviceProvider.route.js";
 import productRoutes from "./routes/product.route.js";
+import accountLeadRoutes from "./routes/accountLead.routes.js";
+import leadStagesRoutes from "./routes/leadStages.routes.js";
+import trancheRoutes from "./routes/tranche.route.js";
 
 dotenv.config();
 
@@ -60,6 +63,9 @@ app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/locations', locationRoutes);
 app.use('/api/v1/service-providers', serviceProviderRoutes);
 app.use('/api/v1/products', productRoutes);
+app.use('/api/v1/account-leads', accountLeadRoutes);
+app.use('/api/v1/lead-stages', leadStagesRoutes);
+app.use('/api/v1/tranches', trancheRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
