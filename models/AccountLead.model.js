@@ -73,7 +73,7 @@ const accountLeadSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["In Progress", "Banker Confirmed", "Confirmation Received", "PART_CASE_FOUND", "CASE_FOUND", "Ready to report", "Invoice Raised", "Closed"],
+      enum: ["In Progress", "Banker Confirmed", "Confirmation Received", "PART_CASE_FOUND", "CASE_FOUND", "Ready to report", "Invoice Raised", "Closed", "Invoiced", "Recovery Required"],
       default: "In Progress",
     },
     createdBy: {
@@ -95,6 +95,10 @@ const accountLeadSchema = new mongoose.Schema(
     confirmationStageId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ConfirmationStage"
+    },
+    spInvoiceStageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SPInvoiceStage"
     },
     tranchesIds: [
       {

@@ -26,6 +26,8 @@ import productRoutes from "./routes/product.route.js";
 import accountLeadRoutes from "./routes/accountLead.routes.js";
 import leadStagesRoutes from "./routes/leadStages.routes.js";
 import trancheRoutes from "./routes/tranche.route.js";
+import otpRoutes from "./routes/otp.route.js";
+import channelPartnerRoutes from "./routes/channelPartner.route.js";
 
 dotenv.config();
 
@@ -66,6 +68,8 @@ app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/account-leads', accountLeadRoutes);
 app.use('/api/v1/lead-stages', leadStagesRoutes);
 app.use('/api/v1/tranches', trancheRoutes);
+app.use('/api/v1/otp', otpRoutes);
+app.use('/api/v1/channel-partners', channelPartnerRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

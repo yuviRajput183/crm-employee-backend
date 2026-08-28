@@ -13,6 +13,7 @@ class WhatsAppMessageService {
      */
     async sendWhatsAppMessage(mobileNumber, templateName, templateParams = []) {
         try {
+
             // Build the payload - ADJUST THIS STRUCTURE based on the 3rd party API docs
             // (e.g., WATI, Interakt, Meta Cloud API, Msg91, etc.)
             
@@ -273,6 +274,67 @@ class WhatsAppMessageService {
     async sendForm16aMessage(mobileNumber, data) {
         const { name, quarter } = data;
         return await this.sendWhatsAppMessage(mobileNumber, 'form16a', [name, quarter]);
+    }
+    /**
+     * Send an OTP using the specific 'otp' template
+     * @param {string} mobileNumber - The recipient's mobile number
+     * @param {string} otpCode - The OTP code to send
+     */
+    async sendOtp(mobileNumber, otpCode) {
+        try {
+            const payload = {
+                "template": {
+                    "components": [
+                        {
+                            "type": "body",
+                            "parameters": [
+                                {
+                                    "text": String(otpCode),
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        {
+                            "sub_type": "url",
+                            "index": 0,
+                            "type": "button",
+                            "parameters": [
+                                {
+                                    "text": String(otpCode),
+                                    "type": "text"
+                                }
+                            ]
+                        }
+                    ],
+                    "name": "otp",
+                    "language": {
+                        "code": "en_US",
+                        "policy": "deterministic"
+                    }
+                },
+                "messaging_product": "whatsapp",
+                "to": "91" + mobileNumber,
+                "type": "template"
+            };
+
+            const response = await axios.post(
+                this.apiUrl,
+                payload,
+                {
+                    headers: {
+                        'Key': this.apiKey,
+                        'Content-Type': 'application/json',
+                        'wabaNumber': this.wabaNumber
+                    }
+                }
+            );
+
+            console.log(`WhatsApp OTP template sent successfully to ${mobileNumber}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error sending WhatsApp OTP template:`, error?.response?.data || error.message);
+            return null;
+        }
     }
 }
 

@@ -59,3 +59,30 @@ export const saveCaseReporting = async (req, res, next) => {
     return next(ErrorResponse.internalServer(error.message));
   }
 };
+
+export const uploadCalculationExcel = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return next(ErrorResponse.badRequest("Please upload an excel file."));
+    }
+    const data = await LeadStagesService.uploadCalculationExcel(req);
+    return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+export const saveSPInvoiceStage = async (req, res, next) => {
+  try {
+    const requiredFields = ["invoiceType", "calculationSameAsReported"];
+    const missingFields = helperService.validateFields(requiredFields, req.body);
+    if (missingFields.length > 0) {
+      return next(ErrorResponse.badRequest(`Missing fields: ${missingFields.join(", ")}`));
+    }
+
+    const data = await LeadStagesService.saveSPInvoiceStage(req);
+    return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
