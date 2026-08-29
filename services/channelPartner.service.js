@@ -5,7 +5,7 @@ import surepassService from "./surepass.service.js";
 class ChannelPartnerService {
     async verifyPan(req, res, next) {
         const { channelPartnerId } = req.params;
-        let { pan } = req.body;
+        let { pan, isAuthPan } = req.body;
 
         if (!pan || typeof pan !== 'string') {
             return next(ErrorResponse.badRequest("Please enter a valid PAN number."));
@@ -31,22 +31,41 @@ class ChannelPartnerService {
         }
 
         // Idempotency: If already verified with the same PAN
-        if (cp.panVerified && cp.pan === pan) {
-            return {
-                data: {
-                    panVerified: cp.panVerified,
-                    ...cp.panDetails
-                },
-                onboarding: {
-                    currentStage: cp.currentStage,
-                    completedStages: cp.completedStages
-                },
-                message: "PAN is already verified."
-            };
+        if (isAuthPan) {
+            if (cp.authPanVerified && cp.authPan === pan) {
+                return {
+                    data: {
+                        panVerified: cp.authPanVerified,
+                        ...cp.authPanDetails
+                    },
+                    onboarding: {
+                        currentStage: cp.currentStage,
+                        completedStages: cp.completedStages
+                    },
+                    message: "Signatory PAN is already verified."
+                };
+            }
+        } else {
+            if (cp.panVerified && cp.pan === pan) {
+                return {
+                    data: {
+                        panVerified: cp.panVerified,
+                        ...cp.panDetails
+                    },
+                    onboarding: {
+                        currentStage: cp.currentStage,
+                        completedStages: cp.completedStages
+                    },
+                    message: "PAN is already verified."
+                };
+            }
         }
 
-        // Check if PAN is already used by another CP
-        const existingPanUser = await ChannelPartner.findOne({ pan: pan, _id: { $ne: cp._id } });
+        // Check if PAN is already used by another CP (either as primary or auth PAN)
+        const existingPanUser = await ChannelPartner.findOne({ 
+            $or: [ { pan: pan }, { authPan: pan } ],
+            _id: { $ne: cp._id } 
+        });
         if (existingPanUser) {
             return next(ErrorResponse.conflict("This PAN is already associated with another Channel Partner."));
         }
@@ -100,12 +119,24 @@ class ChannelPartnerService {
         };
 
         // Update CP
-        cp.pan = pan;
-        cp.panVerified = true;
-        cp.panVerifiedAt = new Date();
-        cp.panVerificationStatus = "SUCCESS";
-        cp.panDetails = panDetails;
-        
+        if (isAuthPan) {
+            cp.authPan = pan;
+            cp.authPanVerified = true;
+            cp.authPanVerifiedAt = new Date();
+            cp.authPanDetails = panDetails;
+        } else {
+            cp.pan = pan;
+            cp.panVerified = true;
+            cp.panVerifiedAt = new Date();
+            cp.panVerificationStatus = "SUCCESS";
+            cp.panDetails = panDetails;
+            
+            // Only progress stage if verifying primary PAN? Or both? 
+            // We can just keep the stage progression here. 
+            // If primary PAN is verified and it's a person, we move to Aadhaar. 
+            // If it's a company, they still need auth PAN. But stage 3 is Aadhaar. So let's keep it simple.
+        }
+
         if (cp.currentStage === 3) {
             cp.currentStage = 4;
         }
@@ -117,8 +148,9 @@ class ChannelPartnerService {
 
         return {
             data: {
-                panVerified: cp.panVerified,
-                ...cp.panDetails
+                success: true,
+                panVerified: true,
+                ...panDetails
             },
             onboarding: {
                 currentStage: cp.currentStage,

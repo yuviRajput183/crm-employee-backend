@@ -23,6 +23,20 @@ const channelPartnerSchema = new mongoose.Schema(
             aadhaarLinked: Boolean,
             maskedAadhaar: String
         },
+        authPan: { type: String, sparse: true },
+        authPanVerified: { type: Boolean, default: false },
+        authPanVerifiedAt: { type: Date },
+        authPanDetails: {
+            firstName: String,
+            middleName: String,
+            lastName: String,
+            fullName: String,
+            gender: String,
+            dateOfBirth: Date,
+            category: String,
+            aadhaarLinked: Boolean,
+            maskedAadhaar: String
+        },
         aadhaar: { type: String, sparse: true },
         aadhaarVerified: { type: Boolean, default: false },
         aadhaarVerifiedAt: { type: Date },
