@@ -7,8 +7,8 @@ class EmailService {
             port: process.env.SMTP_PORT || 587,
             secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
             auth: {
-                user: process.env.SMTP_USER || "thunderyuvi911@gmail.com",
-                pass: process.env.SMTP_PASS || "yrfy jyou sygf jakh",
+                user: process.env.SMTP_USER || "",
+                pass: process.env.SMTP_PASS || "",
             },
         });
     }

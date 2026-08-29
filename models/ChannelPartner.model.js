@@ -34,6 +34,9 @@ const channelPartnerSchema = new mongoose.Schema(
             photo: String,
             careOf: String,
             fatherName: String,
+            motherName: String,
+            isMarried: Boolean,
+            spouseName: String,
             dateOfBirth: Date,
             gender: String,
             fullAddress: String

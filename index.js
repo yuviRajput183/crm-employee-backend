@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import "dotenv/config";
 import { connectDB } from "./utils/db.js";
 import errorHandler from "./middlewares/error.handler.js";
 import authRoutes from "./routes/auth.route.js";
@@ -29,7 +29,7 @@ import trancheRoutes from "./routes/tranche.route.js";
 import otpRoutes from "./routes/otp.route.js";
 import channelPartnerRoutes from "./routes/channelPartner.route.js";
 
-dotenv.config();
+
 
 const app = express();
 const port = process.env.PORT || 4000;
