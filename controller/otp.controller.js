@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import ChannelPartner from "../models/ChannelPartner.model.js";
 import Otp from "../models/Otp.model.js";
+import Counter from "../models/Counter.model.js";
 import otpService from "../services/otp.service.js";
 import emailService from "../services/email.service.js";
 import whatsappMessageService from "../services/whatsappMessage.service.js";
@@ -179,6 +180,17 @@ class OtpController {
             // Update session status
             if (channel === "mobile") {
                 cp.mobileVerified = true;
+                if (!cp.applicationNumber) {
+                    const currentYear = new Date().getFullYear();
+                    const counterName = `CP_APP_${currentYear}`;
+                    const counter = await Counter.findOneAndUpdate(
+                        { name: counterName },
+                        { $inc: { seq: 1 } },
+                        { new: true, upsert: true }
+                    );
+                    cp.applicationNumber = `LSPA-${currentYear}-${String(counter.seq).padStart(6, '0')}`;
+                    cp.applicationStatus = "IN_PROGRESS";
+                }
                 if (cp.currentStage === 1) {
                     cp.currentStage = 2;
                     if (!cp.completedStages.includes(1)) cp.completedStages.push(1);

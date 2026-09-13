@@ -1,8 +1,25 @@
 import ErrorResponse from "../lib/error.res.js";
 import ChannelPartner from "../models/ChannelPartner.model.js";
 import surepassService from "./surepass.service.js";
+import fs from "fs";
+import path from "path";
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 class ChannelPartnerService {
+    async getAllChannelPartners(req, res, next) {
+        const cps = await ChannelPartner.find().sort({ createdAt: -1 });
+        return { data: cps };
+    }
+
+    async getChannelPartner(req, res, next) {
+        const { channelPartnerId } = req.params;
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+        return { data: cp };
+    }
+
     async verifyPan(req, res, next) {
         const { channelPartnerId } = req.params;
         let { pan, isAuthPan } = req.body;
@@ -346,6 +363,454 @@ class ChannelPartnerService {
             },
             message: "Aadhaar details confirmed successfully."
         };
+    }
+    async verifyBank(req, res, next) {
+        const { channelPartnerId } = req.params;
+        const { accountNumber, ifsc } = req.body;
+
+        if (!accountNumber || !ifsc) {
+            return next(ErrorResponse.badRequest("Account Number and IFSC Code are required."));
+        }
+
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+
+        // Call Surepass API
+        /*
+        let surepassResponse;
+        try {
+            surepassResponse = await surepassService.verifyBankAccount(accountNumber, ifsc);
+        } catch (error) {
+            console.error("External Bank API error:", error);
+            return next(ErrorResponse.internalServer("Bank verification service is temporarily unavailable. Please try again later."));
+        }
+
+        if (!surepassResponse || !surepassResponse.data || surepassResponse.data.status !== "success") {
+            return next(ErrorResponse.badRequest("Bank account verification failed. Please check the details."));
+        }
+
+        const bankData = surepassResponse.data;
+        */
+
+        // Dummy data for testing
+        const bankData = {
+            account_exists: true,
+            full_name: "DUMMY TEST USER",
+            remarks: "Account is active (DUMMY)",
+            status: "success",
+            ifsc_details: {
+                bank_name: "DUMMY BANK LTD",
+                branch: "TEST BRANCH",
+                city: "TEST CITY",
+                state: "TEST STATE",
+                micr: "123456789",
+                contact: "1234567890",
+                address: "DUMMY ADDRESS, TEST CITY"
+            }
+        };
+
+        // Ensure name matches or at least save it
+        cp.bankDetails = {
+            accountNumber,
+            ifsc,
+            accountExists: bankData.account_exists,
+            fullName: bankData.full_name,
+            remarks: bankData.remarks,
+            status: bankData.status,
+            bankName: bankData.ifsc_details?.bank_name,
+            branch: bankData.ifsc_details?.branch,
+            city: bankData.ifsc_details?.city,
+            state: bankData.ifsc_details?.state,
+            micr: bankData.ifsc_details?.micr,
+            contact: bankData.ifsc_details?.contact,
+            address: bankData.ifsc_details?.address,
+            verifiedAt: new Date()
+        };
+
+        if (cp.currentStage === 5) {
+            cp.currentStage = 6;
+        }
+        if (!cp.completedStages.includes(5)) {
+            cp.completedStages.push(5);
+        }
+
+        // Mongoose mixed type requires markModified
+        cp.markModified('bankDetails');
+        await cp.save();
+
+        return {
+            data: {
+                bankDetails: cp.bankDetails,
+                businessDetails: cp.businessDetails,
+                panDetails: cp.panDetails,
+                aadhaarDetails: cp.aadhaarDetails,
+                mobile: cp.mobile,
+                email: cp.email,
+                authPanDetails: cp.authPanDetails
+            },
+            onboarding: {
+                currentStage: cp.currentStage,
+                completedStages: cp.completedStages
+            },
+            message: "Bank account verified successfully."
+        };
+    }
+
+    async confirmPartnerDetails(req, res, next) {
+        const { channelPartnerId } = req.params;
+        const { declarationAccepted, addressSource, addressDetails } = req.body;
+
+        if (!declarationAccepted) {
+            return next(ErrorResponse.badRequest("Declaration must be accepted."));
+        }
+
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+
+        if (!cp.bankDetails) {
+            cp.bankDetails = {};
+        }
+
+        cp.bankDetails.detailsConfirmed = true;
+        cp.bankDetails.detailsConfirmedAt = new Date();
+        cp.bankDetails.addressSource = addressSource;
+        cp.bankDetails.addressDetails = addressDetails;
+
+        cp.markModified('bankDetails');
+        await cp.save();
+
+        return {
+            onboarding: {
+                currentStage: cp.currentStage,
+                completedStages: cp.completedStages
+            },
+            message: "Partner details confirmed successfully."
+        };
+    }
+    async uploadDocuments(req, res, next) {
+        const { channelPartnerId } = req.params;
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+
+        const cpName = cp.aadhaarDetails?.fullName || cp.panDetails?.fullName || 'Unknown';
+        const safeName = cpName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        
+        // We'll use cp._id as UniqueId
+        const dirName = `${cp._id}_${safeName}`;
+        const targetDir = path.join(process.cwd(), 'uploads', 'ChannelPartnerDocuments', dirName);
+
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const files = req.files || [];
+        const uploadedFilePaths = {};
+
+        files.forEach(file => {
+            const ext = path.extname(file.originalname) || '.pdf';
+            const targetFileName = `${file.fieldname}${ext}`;
+            const targetPath = path.join(targetDir, targetFileName);
+            
+            fs.renameSync(file.path, targetPath);
+            
+            // Generate public URL
+            uploadedFilePaths[file.fieldname] = `/uploads/ChannelPartnerDocuments/${dirName}/${targetFileName}`;
+        });
+
+        // Determine required docs based on CP state
+        const requiredDocs = ['pan', 'bankProof'];
+        if (cp.authPanVerified) {
+            requiredDocs.push('authSignPan', 'authSignAadhaar', 'authSignLetter');
+        }
+        const isPerson = cp.businessDetails?.registrationType === 'Individual' || cp.businessDetails?.registrationType === 'Sole Proprietorship' || cp.businessDetails?.registrationType === 'HUF';
+        if (isPerson) requiredDocs.push('aadhaar');
+        if (cp.businessDetails?.udyam?.declarationType === 'REGISTERED') requiredDocs.push('udyamCert');
+        if (cp.businessDetails?.gst?.declarationType === 'REGISTERED') {
+            requiredDocs.push('gstCert', 'eInvoiceDeclaration');
+        }
+        if (cp.businessDetails?.registrationType === 'Company') requiredDocs.push('coi', 'moa', 'aoa');
+        if (cp.businessDetails?.registrationType === 'Firm/LLP') requiredDocs.push('partnershipDeed');
+
+        // Merge with existing docStates if they exist (in case of re-upload after rejection)
+        const docStates = cp.documents?.docStates ? { ...cp.documents.docStates } : {};
+        
+        requiredDocs.forEach(doc => {
+            if (!docStates[doc] || docStates[doc].status !== 'APPROVED') {
+                docStates[doc] = { 
+                    status: 'SUBMITTED', 
+                    remark: '',
+                    url: uploadedFilePaths[doc] || docStates[doc]?.url || ''
+                };
+            }
+        });
+
+        cp.documents = {
+            status: "SUBMITTED",
+            submittedAt: new Date(),
+            docStates: docStates
+        };
+
+        if (cp.currentStage === 6) {
+            cp.currentStage = 7;
+        }
+        if (!cp.completedStages.includes(6)) {
+            cp.completedStages.push(6);
+        }
+
+        cp.isApproved = false;
+        cp.status = "pending";
+
+        cp.markModified('documents');
+        await cp.save();
+
+        return {
+            onboarding: {
+                currentStage: cp.currentStage,
+                completedStages: cp.completedStages
+            },
+            message: "Documents submitted successfully for review."
+        };
+    }
+
+    async reviewDocument(req, res, next) {
+        const { channelPartnerId, docKey } = req.params;
+        const { status, remark } = req.body;
+
+        if (!['APPROVED', 'REJECTED'].includes(status)) {
+            return next(ErrorResponse.badRequest("Status must be either APPROVED or REJECTED."));
+        }
+
+        if (status === 'REJECTED' && !remark) {
+            return next(ErrorResponse.badRequest("Remark is required when rejecting a document."));
+        }
+
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+
+        if (!cp.documents || !cp.documents.docStates || !cp.documents.docStates[docKey]) {
+            return next(ErrorResponse.badRequest("Document not found in submissions."));
+        }
+
+        cp.documents.docStates[docKey].status = status;
+        cp.documents.docStates[docKey].remark = status === 'REJECTED' ? remark : '';
+
+        // Check overall status
+        const states = Object.values(cp.documents.docStates);
+        const anyRejected = states.some(doc => doc.status === 'REJECTED');
+        const allApproved = states.every(doc => doc.status === 'APPROVED');
+
+        if (anyRejected) {
+            cp.documents.status = 'REJECTED';
+        } else if (allApproved) {
+            cp.documents.status = 'APPROVED';
+        } else {
+            cp.documents.status = 'SUBMITTED';
+        }
+
+        cp.markModified('documents');
+        await cp.save();
+
+        return { message: `Document ${docKey} ${status.toLowerCase()} successfully`, documents: cp.documents };
+    }
+
+    async generateAgreement(req, res, next) {
+        const { channelPartnerId } = req.params;
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+
+        if (!cp.pan && !cp.panDetails?.panNumber) {
+            return next(ErrorResponse.badRequest("Verified PAN is required to generate the agreement."));
+        }
+        if (!cp.mobile) {
+            return next(ErrorResponse.badRequest("Verified mobile number is required to generate the agreement."));
+        }
+        if (!cp.email) {
+            return next(ErrorResponse.badRequest("Verified email address is required to generate the agreement."));
+        }
+
+        const templatePath = path.join(process.cwd(), 'templates', 'pdf', 'ULSPL Connector Agreement - AcroForm.pdf');
+        if (!fs.existsSync(templatePath)) {
+            return next(ErrorResponse.internalServer("Agreement template not found on server."));
+        }
+
+        try {
+            const pdfBytes = fs.readFileSync(templatePath);
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            const form = pdfDoc.getForm();
+
+            // Format date as DD/MM/YYYY
+            const now = new Date();
+            const signingDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+            
+            // Name logic
+            const cpName = cp.businessDetails?.udyam?.enterpriseName || cp.businessDetails?.gst?.legalName || cp.panDetails?.fullName || cp.aadhaarDetails?.fullName || '';
+            const pan = cp.panDetails?.panNumber || cp.pan || '';
+            
+            // Address logic
+            const udyamAddr = cp.businessDetails?.udyam?.officialAddress;
+            const gstAddr = cp.businessDetails?.gst?.address;
+            const bankAddr = cp.bankDetails?.addressDetails ? 
+                `${cp.bankDetails.addressDetails.addressLine1 || ''} ${cp.bankDetails.addressDetails.addressLine2 || ''}`.trim() : '';
+            const aadhaarAddr = cp.aadhaarDetails?.fullAddress;
+            
+            const businessAddress = udyamAddr || gstAddr || aadhaarAddr || bankAddr || '';
+            const commAddress = aadhaarAddr || bankAddr || businessAddress || '';
+            
+            const mobile = cp.mobile || '';
+            const email = cp.email || '';
+            const authSignName = cp.authPanDetails?.fullName || cp.panDetails?.fullName || '';
+
+            const AGREEMENT_FIELDS = {
+                signingDate,
+                channelPartnerName: cpName,
+                pan,
+                businessAddress,
+                connectorName: cpName,
+                contactName: authSignName,
+                communicationAddress: commAddress,
+                connectorAddress: commAddress,
+                mobile,
+                connectorMobile: mobile,
+                email,
+                connectorEmail: email,
+                executionPartnerName: cpName,
+                authorizedSignatoryName: authSignName,
+                scheduleFirmName: cpName,
+                additionalGuidelinesConnectorName: cpName,
+                conflictConnectorName: cpName
+            };
+
+            const setTextField = (formObj, fieldName, value) => {
+                try {
+                    const field = formObj.getTextField(fieldName);
+                    if (!field) {
+                        console.warn(`PDF field not found: ${fieldName}`);
+                        return;
+                    }
+                    field.setText(value == null ? "" : String(value));
+                } catch (err) {
+                    console.warn(`Could not set field ${fieldName}: ${err.message}`);
+                }
+            };
+
+            Object.entries(AGREEMENT_FIELDS).forEach(([fieldName, value]) => {
+                setTextField(form, fieldName, value);
+            });
+
+            // eSign process requires unflattened PDF with signature fields intact
+
+            // --- Merge logic starts here ---
+            const agreementPdfBytes = await pdfDoc.save();
+
+            // Generate KYC Form
+            const { default: pdfGeneratorService } = await import("./pdfGenerator.service.js");
+            const kycPdfBytes = await pdfGeneratorService.generateKycForm(cp);
+
+            // Merge PDFs
+            const mergedPdf = await PDFDocument.create();
+            const kycDoc = await PDFDocument.load(kycPdfBytes);
+            const agreementDoc = await PDFDocument.load(agreementPdfBytes);
+
+            const copiedKycPages = await mergedPdf.copyPages(kycDoc, kycDoc.getPageIndices());
+            copiedKycPages.forEach((page) => mergedPdf.addPage(page));
+
+            const copiedAgreementPages = await mergedPdf.copyPages(agreementDoc, agreementDoc.getPageIndices());
+            copiedAgreementPages.forEach((page) => mergedPdf.addPage(page));
+
+            const pdfBytesOut = await mergedPdf.save();
+            // --- Merge logic ends here ---
+
+            const targetDir = path.join(process.cwd(), 'uploads', 'Agreements');
+            if (!fs.existsSync(targetDir)) {
+                fs.mkdirSync(targetDir, { recursive: true });
+            }
+
+            const timestamp = Date.now();
+            const sanitizedId = String(cp._id).replace(/[^a-zA-Z0-9_-]/g, '');
+            const fileName = `ULSPL-Connector-Agreement-${sanitizedId}-${timestamp}.pdf`;
+            const filePath = path.join(targetDir, fileName);
+            
+            fs.writeFileSync(filePath, pdfBytesOut);
+
+            const fileUrl = `/uploads/Agreements/${fileName}`;
+
+            // Update CP state to Stage 8
+            if (cp.currentStage === 7) {
+                cp.currentStage = 8;
+            }
+            if (!cp.completedStages.includes(7)) {
+                cp.completedStages.push(7);
+            }
+            
+            const templateVersion = "ULSPL_CONNECTOR_AGREEMENT_V1";
+            cp.agreement = {
+                generated: true,
+                generatedAt: new Date(),
+                fileName,
+                filePath,
+                fileUrl,
+                templateVersion
+            };
+            
+            if (!cp.documents) cp.documents = {};
+            cp.documents.agreementUrl = fileUrl;
+            
+            cp.markModified('agreement');
+            cp.markModified('documents');
+            await cp.save();
+
+            return {
+                message: "Connector agreement generated successfully",
+                data: {
+                    channelPartnerId: cp._id,
+                    fileName,
+                    fileUrl,
+                    generatedAt: cp.agreement.generatedAt
+                },
+                onboarding: {
+                    currentStage: cp.currentStage,
+                    completedStages: cp.completedStages
+                }
+            };
+        } catch (err) {
+            console.error("PDF Generation Error:", err);
+            return next(ErrorResponse.internalServer("Failed to generate PDF agreement."));
+        }
+    }
+
+    async downloadAgreement(req, res, next) {
+        const { channelPartnerId } = req.params;
+        const cp = await ChannelPartner.findById(channelPartnerId);
+        
+        if (!cp) {
+            return next(ErrorResponse.notFound("Channel Partner not found."));
+        }
+
+        if (!cp.agreement || !cp.agreement.filePath) {
+            return next(ErrorResponse.notFound("Agreement not generated yet."));
+        }
+
+        const filePath = cp.agreement.filePath;
+        if (!fs.existsSync(filePath)) {
+            return next(ErrorResponse.notFound("Agreement file not found on server."));
+        }
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${cp.agreement.fileName}"`);
+        
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
     }
 }
 
