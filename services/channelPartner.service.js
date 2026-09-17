@@ -292,12 +292,10 @@ class ChannelPartnerService {
         let updatedSpouseName = cp.aadhaarDetails.spouseName;
         let updatedIsMarried = cp.aadhaarDetails.isMarried;
 
-        if (!updatedCareOf) {
-            if (!careOf || !careOf.trim() || careOf.trim() === '-' || careOf.trim().toLowerCase() === 'null') {
-                return next(ErrorResponse.badRequest("Please enter Care of."));
-            }
-            updatedCareOf = careOf.trim();
-        }
+        // Removed mandatory careOf check because it is strictly fetched from Aadhaar API
+        // if (!updatedCareOf) {
+        //     updatedCareOf = careOf ? careOf.trim() : null;
+        // }
 
         if (!updatedFatherName) {
             if (!fatherName || !fatherName.trim() || fatherName.trim() === '-' || fatherName.trim().toLowerCase() === 'null') {
@@ -528,14 +526,14 @@ class ChannelPartnerService {
         if (cp.authPanVerified) {
             requiredDocs.push('authSignPan', 'authSignAadhaar', 'authSignLetter');
         }
-        const isPerson = cp.businessDetails?.registrationType === 'Individual' || cp.businessDetails?.registrationType === 'Sole Proprietorship' || cp.businessDetails?.registrationType === 'HUF';
+        const isPerson = cp.businessDetails?.registrationType === 'Individual' || cp.businessDetails?.registrationType === 'Sole Proprietorship' || cp.businessDetails?.registrationType === 'Individual/Sole Prop' || cp.businessDetails?.registrationType === 'HUF';
         if (isPerson) requiredDocs.push('aadhaar');
         if (cp.businessDetails?.udyam?.declarationType === 'REGISTERED') requiredDocs.push('udyamCert');
         if (cp.businessDetails?.gst?.declarationType === 'REGISTERED') {
             requiredDocs.push('gstCert', 'eInvoiceDeclaration');
         }
         if (cp.businessDetails?.registrationType === 'Company') requiredDocs.push('coi', 'moa', 'aoa');
-        if (cp.businessDetails?.registrationType === 'Firm/LLP') requiredDocs.push('partnershipDeed');
+        if (cp.businessDetails?.registrationType === 'Firm/LLP' || cp.businessDetails?.registrationType === 'Partnership/LLP') requiredDocs.push('partnershipDeed');
 
         // Merge with existing docStates if they exist (in case of re-upload after rejection)
         const docStates = cp.documents?.docStates ? { ...cp.documents.docStates } : {};

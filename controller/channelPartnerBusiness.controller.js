@@ -8,7 +8,7 @@ export const getBusinessVerificationState = async (req, res, next) => {
         const { channelPartnerId } = req.params;
         const cp = await ChannelPartner.findById(channelPartnerId);
         if (!cp) return next(ErrorResponse.notFound("Channel Partner not found"));
-        return res.status(200).json({ success: true, businessDetails: cp.businessDetails, pan: cp.pan, aadhaar: cp.aadhaarDetails?.fullName });
+        return res.status(200).json({ success: true, businessDetails: cp.businessDetails, pan: cp.pan, aadhaar: cp.aadhaarDetails?.fullName, panName: cp.panDetails?.fullName || cp.authPanDetails?.fullName });
     } catch (error) {
         next(ErrorResponse.internalServer(error.message));
     }
@@ -143,10 +143,11 @@ export const verifyUdyam = async (req, res, next) => {
 export const submitUdyamDeclaration = async (req, res, next) => {
     try {
         const { channelPartnerId } = req.params;
-        const { type, selectedUnit } = req.body; 
+        const { type, selectedUnit, capacity } = req.body; 
         const cp = await ChannelPartner.findById(channelPartnerId);
         if (!cp) return next(ErrorResponse.notFound("Channel Partner not found"));
         
+        if (capacity) cp.businessDetails.capacity = capacity;
         cp.businessDetails.udyam.declarationType = type;
         if (selectedUnit) cp.businessDetails.udyam.selectedUnit = selectedUnit;
         cp.businessDetails.udyam.declarationAccepted = true;
@@ -210,10 +211,11 @@ export const verifyGst = async (req, res, next) => {
 export const submitGstDeclaration = async (req, res, next) => {
     try {
         const { channelPartnerId } = req.params;
-        const { type } = req.body; 
+        const { type, capacity } = req.body; 
         const cp = await ChannelPartner.findById(channelPartnerId);
         if (!cp) return next(ErrorResponse.notFound("Channel Partner not found"));
         
+        if (capacity) cp.businessDetails.capacity = capacity;
         cp.businessDetails.gst.declarationType = type;
         cp.businessDetails.gst.declarationAccepted = true;
         cp.businessDetails.gst.declarationAcceptedAt = new Date();

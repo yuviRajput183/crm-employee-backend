@@ -58,7 +58,8 @@ const channelPartnerSchema = new mongoose.Schema(
             fullAddress: String
         },
         businessDetails: {
-            registrationType: { type: String, enum: ["Individual", "Sole Proprietorship", "Firm/LLP", "Company", "HUF"] },
+            registrationType: { type: String, enum: ["Individual", "Sole Proprietorship", "Individual/Sole Prop", "Firm/LLP", "Partnership/LLP", "Company", "HUF"] },
+            capacity: { type: String },
             udyam: {
                 panCheckStatus: { type: String, enum: ["PENDING", "FOUND", "NOT_FOUND"], default: "PENDING" },
                 udyamNumber: { type: String },

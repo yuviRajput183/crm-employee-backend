@@ -54,8 +54,16 @@ class BusinessVerificationService {
             };
 
         } catch (error) {
-            console.error("[checkUdyamByPan] Error:", error?.response?.data || error.message);
-            throw new Error(error?.response?.data?.message || "Failed to check Udyam registration via provider.");
+            const errData = error?.response?.data;
+            if (errData && errData.data && typeof errData.data.udyam_exists === 'boolean') {
+                console.log(`[checkUdyamByPan] Surepass returned ${error.response.status}, but provided udyam_exists:`, errData.data.udyam_exists);
+                return {
+                    found: errData.data.udyam_exists,
+                    migrationStatus: errData.data.migration_status
+                };
+            }
+            console.error("[checkUdyamByPan] Error:", errData || error.message);
+            throw new Error(errData?.message || "Failed to check Udyam registration via provider.");
         }
     }
 
@@ -189,8 +197,13 @@ class BusinessVerificationService {
 
             return { found: false, gstins: [] };
         } catch (error) {
-            console.error("GST PAN Check failed:", error?.response?.data || error.message);
-            throw new Error(error?.response?.data?.message || "Failed to check GST registration via provider.");
+            const errData = error?.response?.data;
+            if (errData && (errData.status_code === 422 || errData.status_code === 404 || errData.status_code === 400)) {
+                console.log(`[checkGstByPan] Surepass returned ${error.response.status}, assuming not found`);
+                return { found: false, gstins: [] };
+            }
+            console.error("GST PAN Check failed:", errData || error.message);
+            throw new Error(errData?.message || "Failed to check GST registration via provider.");
         }
     }
 
