@@ -57,7 +57,8 @@ const esignRequestSchema = new mongoose.Schema({
       "SIGNED_PENDING_DOWNLOAD",
       "SIGNED",
       "FAILED",
-      "CANCELLED"
+      "CANCELLED",
+      "EXPIRED"
     ],
     default: "INITIATED"
   },

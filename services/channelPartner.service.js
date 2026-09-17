@@ -235,6 +235,17 @@ class ChannelPartnerService {
         }
 
         const aadhaarXml = providerResponse.data.aadhaar_xml_data;
+        let constructedAddress = aadhaarXml.full_address || '';
+        if (aadhaarXml.address) {
+            const addr = aadhaarXml.address;
+            const parts = [
+                addr.house, addr.street, addr.landmark, addr.loc, 
+                addr.po, addr.subdist, addr.dist, addr.vtc, 
+                addr.state, addr.country, aadhaarXml.zip || addr.zip
+            ].filter(p => p && String(p).trim() !== '');
+            constructedAddress = parts.join(', ');
+        }
+
         const aadhaarDetails = {
             fullName: aadhaarXml.full_name || '',
             photo: aadhaarXml.profile_image ? `data:image/jpeg;base64,${aadhaarXml.profile_image}` : '',
@@ -242,7 +253,7 @@ class ChannelPartnerService {
             fatherName: aadhaarXml.father_name || null,
             dateOfBirth: aadhaarXml.dob ? new Date(aadhaarXml.dob) : null,
             gender: aadhaarXml.gender || '',
-            fullAddress: aadhaarXml.full_address || ''
+            fullAddress: constructedAddress
         };
 
         cp.aadhaar = aadhaarXml.masked_aadhaar ? aadhaarXml.masked_aadhaar.replace(/[^0-9X]/g, '') : '';
@@ -427,11 +438,11 @@ class ChannelPartnerService {
             verifiedAt: new Date()
         };
 
-        if (cp.currentStage === 5) {
-            cp.currentStage = 6;
+        if (cp.currentStage === 6) {
+            cp.currentStage = 7;
         }
-        if (!cp.completedStages.includes(5)) {
-            cp.completedStages.push(5);
+        if (!cp.completedStages.includes(6)) {
+            cp.completedStages.push(6);
         }
 
         // Mongoose mixed type requires markModified
@@ -538,31 +549,48 @@ class ChannelPartnerService {
         // Merge with existing docStates if they exist (in case of re-upload after rejection)
         const docStates = cp.documents?.docStates ? { ...cp.documents.docStates } : {};
         
-        requiredDocs.forEach(doc => {
-            if (!docStates[doc] || docStates[doc].status !== 'APPROVED') {
-                docStates[doc] = { 
-                    status: 'SUBMITTED', 
-                    remark: '',
-                    url: uploadedFilePaths[doc] || docStates[doc]?.url || ''
-                };
+        const isFinalSubmit = req.body.isFinalSubmit === 'true';
+
+        // Update URL for just the uploaded files
+        Object.keys(uploadedFilePaths).forEach(docKey => {
+            if (!docStates[docKey]) docStates[docKey] = { remark: '' };
+            docStates[docKey].url = uploadedFilePaths[docKey];
+            if (docStates[docKey].status !== 'APPROVED') {
+                docStates[docKey].status = isFinalSubmit ? 'SUBMITTED' : 'UPLOADED';
             }
         });
 
-        cp.documents = {
-            status: "SUBMITTED",
-            submittedAt: new Date(),
-            docStates: docStates
-        };
+        if (isFinalSubmit) {
+            requiredDocs.forEach(doc => {
+                if (!docStates[doc] || docStates[doc].status !== 'APPROVED') {
+                    docStates[doc] = { 
+                        status: 'SUBMITTED', 
+                        remark: '',
+                        url: docStates[doc]?.url || ''
+                    };
+                }
+            });
 
-        if (cp.currentStage === 6) {
-            cp.currentStage = 7;
-        }
-        if (!cp.completedStages.includes(6)) {
-            cp.completedStages.push(6);
-        }
+            cp.documents = {
+                status: "SUBMITTED",
+                submittedAt: new Date(),
+                docStates: docStates
+            };
 
-        cp.isApproved = false;
-        cp.status = "pending";
+            if (cp.currentStage === 7) {
+                cp.currentStage = 8;
+            }
+            if (!cp.completedStages.includes(7)) {
+                cp.completedStages.push(7);
+            }
+
+            cp.isApproved = false;
+            cp.status = "pending";
+        } else {
+            if (!cp.documents) cp.documents = {};
+            cp.documents.docStates = docStates;
+            cp.documents.status = cp.documents.status || 'DRAFT';
+        }
 
         cp.markModified('documents');
         await cp.save();
@@ -743,12 +771,12 @@ class ChannelPartnerService {
 
             const fileUrl = `/uploads/Agreements/${fileName}`;
 
-            // Update CP state to Stage 8
-            if (cp.currentStage === 7) {
-                cp.currentStage = 8;
+            // Update CP state to Stage 9
+            if (cp.currentStage === 8) {
+                cp.currentStage = 9;
             }
-            if (!cp.completedStages.includes(7)) {
-                cp.completedStages.push(7);
+            if (!cp.completedStages.includes(8)) {
+                cp.completedStages.push(8);
             }
             
             const templateVersion = "ULSPL_CONNECTOR_AGREEMENT_V1";

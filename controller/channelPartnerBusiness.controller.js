@@ -2,7 +2,9 @@ import ChannelPartner from "../models/ChannelPartner.model.js";
 import BusinessVerificationService from "../services/BusinessVerificationService.js";
 import ErrorResponse from "../lib/error.res.js";
 import { downloadAndSaveDocument } from "../utils/file.util.js";
-
+import { convertHtmlToPdf } from "../utils/pdf.util.js";
+import path from "path";
+import fs from "fs";
 export const getBusinessVerificationState = async (req, res, next) => {
     try {
         const { channelPartnerId } = req.params;
@@ -118,7 +120,25 @@ export const verifyUdyam = async (req, res, next) => {
                 const safeName = cpName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
                 const dirName = `${cp._id}_${safeName}`;
                 
-                const localUrl = await downloadAndSaveDocument(result.data.certificateUrl, dirName, 'udyamCert.pdf');
+                let localUrl;
+                try {
+                    const urlObj = new URL(result.data.certificateUrl);
+                    if (urlObj.pathname.endsWith('.html')) {
+                        const targetDir = path.join(process.cwd(), 'uploads', 'ChannelPartnerDocuments', dirName);
+                        if (!fs.existsSync(targetDir)) {
+                            fs.mkdirSync(targetDir, { recursive: true });
+                        }
+                        const outputPath = path.join(targetDir, 'udyamCert.pdf');
+                        await convertHtmlToPdf(result.data.certificateUrl, outputPath);
+                        localUrl = `/uploads/ChannelPartnerDocuments/${dirName}/udyamCert.pdf`;
+                    } else {
+                        let ext = '.pdf';
+                        if (urlObj.pathname.endsWith('.jpg') || urlObj.pathname.endsWith('.jpeg')) ext = '.jpg';
+                        localUrl = await downloadAndSaveDocument(result.data.certificateUrl, dirName, `udyamCert${ext}`);
+                    }
+                } catch(e) {
+                    localUrl = await downloadAndSaveDocument(result.data.certificateUrl, dirName, 'udyamCert.pdf');
+                }
                 
                 cp.businessDetails.udyam.certificateDocument = {
                     url: localUrl,
@@ -221,10 +241,12 @@ export const submitGstDeclaration = async (req, res, next) => {
         cp.businessDetails.gst.declarationAcceptedAt = new Date();
         
         cp.businessDetails.businessVerificationStatus = "COMPLETED";
-        if(!cp.completedStages.includes(4)) {
-            cp.completedStages.push(4);
+        if(!cp.completedStages.includes(5)) {
+            cp.completedStages.push(5);
         }
-        cp.currentStage = 5; 
+        if (cp.currentStage === 5) {
+            cp.currentStage = 6; 
+        }
         await cp.save();
         
         return res.status(200).json({ success: true, message: "GST declaration accepted", businessDetails: cp.businessDetails });

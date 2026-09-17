@@ -195,11 +195,11 @@ class EsignService {
             if (cp) {
                 cp.agreementSigningAt = new Date();
                 cp.documents.signedAgreementUrl = publicUrl;
-                if (cp.currentStage === 8) {
-                    cp.currentStage = 9;
+                if (cp.currentStage === 9) {
+                    cp.currentStage = 10;
                 }
-                if (!cp.completedStages.includes(8)) {
-                    cp.completedStages.push(8);
+                if (!cp.completedStages.includes(9)) {
+                    cp.completedStages.push(9);
                 }
                 cp.markModified('documents');
                 await cp.save();
