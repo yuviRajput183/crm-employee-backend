@@ -179,6 +179,61 @@ export class PdfGeneratorService {
         const pdfBytes = await doc.save();
         return pdfBytes;
     }
+
+    async generateLoanAgreementPdf(lead) {
+        const doc = await PDFDocument.create();
+        const font = await doc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+        
+        let page = doc.addPage([595, 842]); // A4
+        const { width, height } = page.getSize();
+        
+        const margin = 50;
+        let y = height - margin;
+
+        const drawText = (text, size, f, x, yPos, color = rgb(0,0,0)) => {
+            page.drawText(text, { x, y: yPos, size, font: f, color });
+        };
+
+        drawText("LOAN AGREEMENT", 18, boldFont, width/2 - 70, y, rgb(0.1, 0.2, 0.4));
+        y -= 40;
+
+        drawText(`Agreement Date: ${moment().format('DD/MM/YYYY')}`, 12, font, margin, y);
+        y -= 20;
+
+        drawText(`Lead No: ${lead.leadNo || ''}`, 12, font, margin, y);
+        y -= 20;
+
+        drawText(`Borrower Name: ${lead.clientName || ''}`, 12, font, margin, y);
+        y -= 20;
+
+        drawText(`Mobile Number: ${lead.mobileNo || ''}`, 12, font, margin, y);
+        y -= 20;
+
+        drawText(`Loan Amount: ${lead.loanRequirementAmount || ''}`, 12, font, margin, y);
+        y -= 40;
+
+        drawText("Terms and Conditions", 14, boldFont, margin, y);
+        y -= 20;
+        
+        const terms = [
+            "1. The borrower agrees to repay the loan amount with interest.",
+            "2. The loan amount shall be disbursed to the verified bank account.",
+            "3. This agreement is electronically signed via Aadhaar OTP.",
+            "4. The terms are subject to the lender's policies."
+        ];
+
+        for (const term of terms) {
+            drawText(term, 10, font, margin, y);
+            y -= 15;
+        }
+
+        // Leave space for eSign signature (Surepass positions)
+        // Position: { "1": [{ x: 80, y: 85 }] } -> Bottom of page 1
+
+        const pdfBytes = await doc.save();
+        return Buffer.from(pdfBytes);
+    }
 }
 
 export default new PdfGeneratorService();

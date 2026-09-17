@@ -1,0 +1,128 @@
+{
+  "info": {
+    "name": "Surepass Aadhaar eSign Integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Start Aadhaar eSign",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{CRM_TOKEN}}"
+          }
+        ],
+        "url": {
+          "raw": "{{CRM_BASE_URL}}/api/v1/esign/leads/{{LEAD_ID}}/start",
+          "host": [
+            "{{CRM_BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "esign",
+            "leads",
+            "{{LEAD_ID}}",
+            "start"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get eSign Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{CRM_TOKEN}}"
+          }
+        ],
+        "url": {
+          "raw": "{{CRM_BASE_URL}}/api/v1/esign/{{ESIGN_ID}}/status",
+          "host": [
+            "{{CRM_BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "esign",
+            "{{ESIGN_ID}}",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Signed Document",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{CRM_TOKEN}}"
+          }
+        ],
+        "url": {
+          "raw": "{{CRM_BASE_URL}}/api/v1/esign/{{ESIGN_ID}}/document",
+          "host": [
+            "{{CRM_BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "esign",
+            "{{ESIGN_ID}}",
+            "document"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Active eSign",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{CRM_TOKEN}}"
+          }
+        ],
+        "url": {
+          "raw": "{{CRM_BASE_URL}}/api/v1/esign/leads/{{LEAD_ID}}/active",
+          "host": [
+            "{{CRM_BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "esign",
+            "leads",
+            "{{LEAD_ID}}",
+            "active"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "CRM_BASE_URL",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "CRM_TOKEN",
+      "value": "your-jwt-token-here"
+    },
+    {
+      "key": "LEAD_ID",
+      "value": "lead-object-id"
+    },
+    {
+      "key": "ESIGN_ID",
+      "value": "esign-object-id"
+    }
+  ]
+}

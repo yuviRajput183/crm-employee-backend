@@ -29,6 +29,7 @@ import trancheRoutes from "./routes/tranche.route.js";
 import otpRoutes from "./routes/otp.route.js";
 import channelPartnerRoutes from "./routes/channelPartner.route.js";
 import channelPartnerCodeRoutes from "./routes/channelPartnerCode.route.js";
+import esignRoutes from "./routes/esign.routes.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -70,6 +71,7 @@ app.use('/api/v1/tranches', trancheRoutes);
 app.use('/api/v1/otp', otpRoutes);
 app.use('/api/v1/channel-partners', channelPartnerRoutes);
 app.use('/api/v1/channel-partner-codes', channelPartnerCodeRoutes);
+app.use('/api/v1/esign', esignRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

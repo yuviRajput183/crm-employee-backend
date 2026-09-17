@@ -174,6 +174,8 @@ class BusinessVerificationService {
                 }
             );
 
+            console.log(`[checkGstByPan] Received response:`, JSON.stringify(response.data));
+
             if (response.data && response.data.success && response.data.data && response.data.data.gstin_list) {
                 const gstins = response.data.data.gstin_list;
                 if (gstins.length === 0) {
@@ -207,6 +209,8 @@ class BusinessVerificationService {
                     }
                 }
             );
+
+            console.log(`[verifyGstin] Received response:`, JSON.stringify(response.data));
 
             if (response.data && response.data.success && response.data.data) {
                 const data = response.data.data;
