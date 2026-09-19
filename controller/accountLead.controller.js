@@ -47,7 +47,9 @@ export const getInProgressLeads = async (req, res, next) => {
         "Banker Confirmed", 
         "Confirmation Received", 
         "PART_CASE_FOUND", 
-        "CASE_FOUND"
+        "CASE_FOUND",
+        "Ready to report",
+        "Invoiced"
     ];
 
     const leads = await AccountLead.find({ status: { $in: allowedStatuses } })
