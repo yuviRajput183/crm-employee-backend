@@ -104,7 +104,7 @@ class LeadStagesService {
     const sheet = workbook.Sheets[sheetName];
     const rows = xlsx.utils.sheet_to_json(sheet);
 
-    let cpPercentage = 0, cpAmount = 0, selfPercentage = 0, selfAmount = 0;
+    let cpPercentage = null, cpAmount = null, selfPercentage = null, selfAmount = null;
     
     if (rows && rows.length > 0) {
       const firstRow = rows[0];
@@ -116,13 +116,13 @@ class LeadStagesService {
         const isSelf = lowerKey.includes("self");
 
         if (isCP && isPercent) {
-          cpPercentage = Number(val) || 0;
+          cpPercentage = val !== undefined && val !== null ? Number(val) : null;
         } else if (isCP && isAmount) {
-          cpAmount = Number(val) || 0;
+          cpAmount = val !== undefined && val !== null ? Number(val) : null;
         } else if (isSelf && isPercent) {
-          selfPercentage = Number(val) || 0;
+          selfPercentage = val !== undefined && val !== null ? Number(val) : null;
         } else if (isSelf && isAmount) {
-          selfAmount = Number(val) || 0;
+          selfAmount = val !== undefined && val !== null ? Number(val) : null;
         }
       }
     }
