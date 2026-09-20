@@ -51,3 +51,20 @@ export const getAllTranches = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateTranche = async (req, res, next) => {
+  try {
+    const { trancheId } = req.params;
+    const data = await TrancheService.updateTranche(trancheId, req.body, req.user);
+    res.status(200).json({
+      success: true,
+      message: "Tranche updated successfully",
+      data
+    });
+  } catch (error) {
+    if (error.message.includes("not found") || error.message.includes("exceed")) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};

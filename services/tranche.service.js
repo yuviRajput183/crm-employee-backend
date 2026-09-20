@@ -100,6 +100,44 @@ class TrancheService {
   async getAllTranches() {
     return await Tranche.find().populate('leadId', 'leadNo caseName').sort({ createdAt: -1 });
   }
+
+  async updateTranche(trancheId, updateData, user) {
+    const tranche = await Tranche.findById(trancheId);
+    if (!tranche) throw new Error("Tranche not found");
+
+    const lead = await AccountLead.findById(tranche.leadId);
+    if (!lead) throw new Error("Account Lead not found");
+
+    // Recalculate lead amounts if tranche amount changes
+    if (updateData.amount && Number(updateData.amount) !== tranche.amount) {
+      if (tranche.status !== 'PENDING') {
+        const diff = Number(updateData.amount) - tranche.amount;
+        const newTotalFound = lead.trancheFoundAmount + diff;
+
+        if (newTotalFound > lead.reportedLoanAmount) {
+          throw new Error("Total tranche amount cannot exceed the case amount.");
+        }
+
+        lead.trancheFoundAmount = newTotalFound;
+        lead.trancheRemainingAmount = lead.reportedLoanAmount - newTotalFound;
+        
+        if (newTotalFound === lead.reportedLoanAmount) {
+           lead.status = "CASE_FOUND";
+           if (lead.stageNumber === 3) lead.stageNumber = 4;
+        } else {
+           lead.status = "PART_CASE_FOUND";
+        }
+        await lead.save();
+      }
+      tranche.amount = Number(updateData.amount);
+    }
+
+    if (updateData.spUid !== undefined) tranche.spUid = updateData.spUid;
+    if (updateData.paymentUid !== undefined) tranche.paymentUid = updateData.paymentUid;
+
+    await tranche.save();
+    return tranche;
+  }
 }
 
 export default new TrancheService();

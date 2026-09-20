@@ -110,13 +110,18 @@ class LeadStagesService {
       const firstRow = rows[0];
       for (const [key, val] of Object.entries(firstRow)) {
         const lowerKey = key.toLowerCase();
-        if ((lowerKey.includes("cp") || lowerKey.includes("partner")) && lowerKey.includes("percent")) {
+        const isPercent = lowerKey.includes("percent") || lowerKey.includes("%") || lowerKey.includes("pct");
+        const isAmount = lowerKey.includes("amount") || lowerKey.includes("amt") || lowerKey.includes("₹") || lowerKey.includes("rs");
+        const isCP = lowerKey.includes("cp") || lowerKey.includes("partner");
+        const isSelf = lowerKey.includes("self");
+
+        if (isCP && isPercent) {
           cpPercentage = Number(val) || 0;
-        } else if ((lowerKey.includes("cp") || lowerKey.includes("partner")) && lowerKey.includes("amount")) {
+        } else if (isCP && isAmount) {
           cpAmount = Number(val) || 0;
-        } else if (lowerKey.includes("self") && lowerKey.includes("percent")) {
+        } else if (isSelf && isPercent) {
           selfPercentage = Number(val) || 0;
-        } else if (lowerKey.includes("self") && lowerKey.includes("amount")) {
+        } else if (isSelf && isAmount) {
           selfAmount = Number(val) || 0;
         }
       }

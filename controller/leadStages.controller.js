@@ -27,6 +27,12 @@ export const saveConfirmationDetails = async (req, res, next) => {
     return next(ErrorResponse.badRequest(`Missing fields: ${missingFields.join(", ")}`));
   }
 
+  if (req.body.confirmationReceived === "Yes") {
+    if (!req.files || !req.files.pdf || !req.files.eml) {
+      return next(ErrorResponse.badRequest("Both PDF and EML files are mandatory to upload."));
+    }
+  }
+
   try {
     const data = await LeadStagesService.saveConfirmationDetails(req);
     return SuccessResponse.ok(res, data.message, data.data);
