@@ -6,24 +6,17 @@ import path from 'path';
 export const convertHtmlToPdf = async (htmlUrl, outputPath) => {
     let browser;
     try {
-        const response = await axios.get(htmlUrl, {
-            responseType: 'text',
-            timeout: 30000
-        });
-
-        const html = response.data;
-        if (!html || typeof html !== 'string') {
-            throw new Error('Invalid HTML response');
-        }
-
         browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         });
 
         const page = await browser.newPage();
-        await page.setContent(html, {
-            waitUntil: 'networkidle0'
+        
+        // Use page.goto instead of downloading HTML to preserve base URL for assets
+        await page.goto(htmlUrl, {
+            waitUntil: 'networkidle0',
+            timeout: 30000
         });
 
         const targetDir = path.dirname(outputPath);

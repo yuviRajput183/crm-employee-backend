@@ -10,7 +10,7 @@ const esignRequestSchema = new mongoose.Schema({
 
   documentType: {
     type: String,
-    enum: ["CHANNEL_PARTNER_AGREEMENT"],
+    enum: ["CHANNEL_PARTNER_AGREEMENT", "ADMIN_CHANNEL_PARTNER_AGREEMENT"],
     required: true
   },
 

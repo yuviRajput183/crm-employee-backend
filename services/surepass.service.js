@@ -3,7 +3,8 @@ import FormData from 'form-data';
 
 class SurepassService {
     constructor() {
-        this.apiToken = process.env.SUREPASS_API_TOKEN || "";
+        // this.apiToken = process.env.SUREPASS_API_TOKEN || "";
+        this.apiToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4OTEyNTgxOCwianRpIjoiMzgwMTE1YmItMDMxMi00ZDVhLTkyZDItNzk5OGRmY2U5MDcyIiwidHlwZSI6ImFjY2VzcyIsImlkZW50aXR5IjoiZGV2LmxvYW5zYWhheWFrQHN1cmVwYXNzLmlvIiwibmJmIjoxNzg5MTI1ODE4LCJleHAiOjE3OTE3MTc4MTgsImVtYWlsIjoibG9hbnNhaGF5YWtAc3VyZXBhc3MuaW8iLCJ0ZW5hbnRfaWQiOiJtYWluIiwidXNlcl9jbGFpbXMiOnsic2NvcGVzIjpbInVzZXIiXX19.cFgUhSQGhc1CQE21aMRrvjLYYbSYpulfi0TxMmoJ6X4";
         this.baseUrl = process.env.SUREPASS_BASE_URL || "https://sandbox.surepass.app";
     }
 
@@ -155,7 +156,7 @@ class SurepassService {
         }
     }
 
-    async initializeAadhaarEsign({ fileId, fullName, mobileNumber, email, positions }) {
+    async initializeAadhaarEsign({ fileId, fullName, mobileNumber, email, positions, redirectUrl }) {
         if (!this.apiToken) {
             throw new Error('Surepass API token is not configured in environment variables');
         }
@@ -174,6 +175,10 @@ class SurepassService {
                     user_email: email || ""
                 }
             };
+            
+            if (redirectUrl) {
+                payload.config.redirect_url = redirectUrl;
+            }
 
             const response = await axios.post(
                 `${this.baseUrl}/api/v1/esign/initialize`,

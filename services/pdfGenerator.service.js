@@ -32,7 +32,7 @@ export class PdfGeneratorService {
                 color: rgb(0.1, 0.2, 0.4),
             });
             drawText(title, 12, boldFont, margin + 5, y - 10, rgb(1,1,1));
-            y -= 25;
+            y -= 35;
         };
 
         const splitText = (text, maxWidth) => {
@@ -92,7 +92,6 @@ export class PdfGeneratorService {
             y -= rowHeight;
         };
 
-        // Header
         drawText("LOAN SAHAYAK", 18, boldFont, width/2 - 70, y, rgb(0.1, 0.2, 0.4));
         y -= 20;
         drawText("CONNECTOR ONBOARDING APPLICATION & KYC FORM", 12, boldFont, width/2 - 150, y, rgb(0.2, 0.5, 0.8));
@@ -143,23 +142,105 @@ export class PdfGeneratorService {
         drawSectionHeader("3. AADHAAR VERIFICATION DETAILS");
         drawRow("Aadhaar No. (Masked)", cp.aadhaar ? `XXXX XXXX ${cp.aadhaar.slice(-4)}` : '');
         drawRow("Full Name", cp.aadhaarDetails?.fullName || '');
+        drawRow("Gender", cp.aadhaarDetails?.gender || '');
+        drawRow("Date of Birth", cp.aadhaarDetails?.dateOfBirth ? moment(cp.aadhaarDetails.dateOfBirth).format('DD/MM/YYYY') : '');
+        drawRow("Full Address", cp.aadhaarDetails?.fullAddress || '');
         drawRow("Care of", cp.aadhaarDetails?.careOf || '');
         drawRow("Father Name", cp.aadhaarDetails?.fatherName || '');
+        drawRow("Mother Name", cp.aadhaarDetails?.motherName || '');
+        
+        const maritalStatusStr = cp.aadhaarDetails?.isMarried === true ? 'Married' : (cp.aadhaarDetails?.isMarried === false ? 'Unmarried' : '');
+        if (maritalStatusStr) {
+            drawRow("Marital Status", maritalStatusStr);
+        }
+        if (cp.aadhaarDetails?.isMarried && cp.aadhaarDetails?.spouseName) {
+            drawRow("Spouse Name", cp.aadhaarDetails.spouseName);
+        }
+
+        if (cp.aadhaarDetails?.photo) {
+            try {
+                const base64Data = cp.aadhaarDetails.photo.split(',')[1] || cp.aadhaarDetails.photo;
+                const imageBytes = Buffer.from(base64Data, 'base64');
+                let embeddedImage;
+                if (cp.aadhaarDetails.photo.includes('png')) {
+                    embeddedImage = await doc.embedPng(imageBytes);
+                } else {
+                    embeddedImage = await doc.embedJpg(imageBytes);
+                }
+                const targetWidth = 80;
+                const targetHeight = (embeddedImage.height / embeddedImage.width) * targetWidth;
+
+                const rowHeight = Math.max(targetHeight + 20, 20);
+
+                if (y - rowHeight < 50) {
+                    page = doc.addPage([595, 842]);
+                    y = height - margin;
+                }
+
+                const rectY = y + 15 - rowHeight;
+                page.drawRectangle({
+                    x: margin, y: rectY, width: 200, height: rowHeight,
+                    borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1
+                });
+                page.drawRectangle({
+                    x: margin + 200, y: rectY, width: width - 2 * margin - 200, height: rowHeight,
+                    borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 1
+                });
+
+                drawText("Photo", 10, boldFont, margin + 5, y);
+                page.drawImage(embeddedImage, {
+                    x: margin + 205,
+                    y: rectY + 10,
+                    width: targetWidth,
+                    height: targetHeight,
+                });
+                
+                y -= rowHeight;
+            } catch (err) {
+                console.error('Error embedding Aadhaar photo', err);
+            }
+        }
         y -= 10;
 
         // Section 4
-        if (cp.businessDetails?.udyam?.verificationStatus === "VERIFIED" || cp.businessDetails?.gst?.verificationStatus === "VERIFIED") {
+        if (cp.businessDetails?.udyam?.verificationStatus === "VERIFIED" || cp.businessDetails?.gst?.verificationStatus === "VERIFIED" || cp.businessDetails?.registrationType) {
             drawSectionHeader("4. BUSINESS VERIFICATION DETAILS");
-            if (cp.businessDetails.udyam?.verificationStatus === "VERIFIED") {
-                drawRow("Enterprise Name", cp.businessDetails.udyam.enterpriseName || '');
-                drawRow("Organisation Type", cp.businessDetails.udyam.organisationType || '');
-                drawRow("Major Activity", cp.businessDetails.udyam.majorActivity || '');
-                drawRow("Udyam Address", cp.businessDetails.udyam.officialAddress || '');
+            
+            if (cp.businessDetails?.registrationType) {
+                drawRow("Registration Type", cp.businessDetails.registrationType);
             }
-            if (cp.businessDetails.gst?.verificationStatus === "VERIFIED") {
+
+            if (cp.businessDetails?.udyam?.verificationStatus === "VERIFIED") {
+                if (cp.businessDetails.udyam.udyamNumber) {
+                    drawRow("Udyam Number", cp.businessDetails.udyam.udyamNumber);
+                }
+                drawRow("Type of Enterprise", cp.businessDetails.udyam.enterpriseType || '');
+                drawRow("Major Activity", cp.businessDetails.udyam.majorActivity || '');
+                drawRow("Type of Organisation", cp.businessDetails.udyam.organisationType || '');
+                drawRow("Enterprise Name", cp.businessDetails.udyam.enterpriseName || '');
+                drawRow("Owner Name", cp.businessDetails.udyam.ownerName || '');
+                drawRow("Date of Incorporation", cp.businessDetails.udyam.dateOfIncorporation || '');
+                drawRow("Official Address", cp.businessDetails.udyam.officialAddress || '');
+                drawRow("Registration Date", cp.businessDetails.udyam.registrationDate || '');
+                drawRow("Last Updated Date", cp.businessDetails.udyam.lastUpdatedDate || '');
+                
+                if (cp.businessDetails.udyam.selectedUnit) {
+                    let unitStr = cp.businessDetails.udyam.selectedUnit;
+                    if (typeof unitStr === 'object') {
+                        // try to format if it's an object
+                        const u = unitStr;
+                        unitStr = [u.unit_name || u.unitName, u.flat, u.building, u.village_town || u.villageTown, u.block, u.road, u.city, u.district, u.state, u.pin].filter(Boolean).join(', ');
+                    }
+                    drawRow("Selected Unit", unitStr);
+                }
+            }
+            if (cp.businessDetails?.gst?.verificationStatus === "VERIFIED") {
                 drawRow("GSTIN", cp.businessDetails.gst.selectedGstin || '');
                 drawRow("Legal Name", cp.businessDetails.gst.legalName || '');
                 drawRow("Business Name", cp.businessDetails.gst.businessName || '');
+                drawRow("Constitution of Business", cp.businessDetails.gst.constitutionOfBusiness || '');
+                drawRow("Date of Registration", cp.businessDetails.gst.dateOfRegistration || '');
+                drawRow("Taxpayer Type", cp.businessDetails.gst.taxpayerType || '');
                 drawRow("GST Status", cp.businessDetails.gst.gstinStatus || '');
                 drawRow("GST Address", cp.businessDetails.gst.address || '');
             }
@@ -174,6 +255,45 @@ export class PdfGeneratorService {
             drawRow("IFSC Code", cp.bankDetails.ifsc || '');
             drawRow("Branch", cp.bankDetails.branch || '');
             drawRow("Verified Name", cp.bankDetails.fullName || '');
+            if (cp.bankDetails.addressSource) {
+                drawRow("Address Source", cp.bankDetails.addressSource);
+            }
+            y -= 10;
+        }
+
+        // Section 6: Declarations & Confirmations
+        drawSectionHeader("6. DECLARATIONS & CONFIRMATIONS");
+        
+        const applicantName = cp.aadhaarDetails?.fullName || cp.panDetails?.fullName || '';
+        const capacity = cp.businessDetails?.capacity || 'Director/Authorized Signatory';
+        const enterpriseName = cp.businessDetails?.udyam?.enterpriseName || cp.businessDetails?.gst?.legalName || '';
+
+        if (cp.aadhaarConfirmed) {
+            drawRow("Aadhaar Details", "I confirm that all the details shown above are correct and agree to use the same for the onboarding process.");
+        }
+        
+        if (cp.businessDetails?.udyam && cp.businessDetails.udyam.declarationAccepted) {
+            if (cp.businessDetails.udyam.declarationType === 'REGISTERED') {
+                const udyamNumber = cp.businessDetails.udyam.udyamNumber || '';
+                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacity} of ${enterpriseName} confirms that I/We are registered as Micro or Small or Medium Enterprise under the Micro, Small and Medium Enterprises Development Act, 2006 via registration number ${udyamNumber}. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
+                drawRow("Udyam Declaration", text);
+            } else {
+                drawRow("Udyam Declaration", "Not Registered - Declaration Accepted");
+            }
+        }
+        
+        if (cp.businessDetails?.gst && cp.businessDetails.gst.declarationAccepted) {
+            if (cp.businessDetails.gst.declarationType === 'REGISTERED') {
+                const gstin = cp.businessDetails.gst.selectedGstin || '';
+                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacity} of ${enterpriseName} confirms that I/We are registered under Good and Services Tax, 2017 via registration number ${gstin}. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
+                drawRow("GST Declaration", text);
+            } else {
+                drawRow("GST Declaration", "Not Registered - Declaration Accepted");
+            }
+        }
+        
+        if (cp.bankDetails?.detailsConfirmed) {
+            drawRow("Bank & Partner Details", "Confirmed and declaration accepted by user");
         }
 
         const pdfBytes = await doc.save();

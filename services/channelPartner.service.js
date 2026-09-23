@@ -705,11 +705,8 @@ class ChannelPartnerService {
                 connectorName: cpName,
                 contactName: authSignName,
                 communicationAddress: commAddress,
-                connectorAddress: commAddress,
                 mobile,
-                connectorMobile: mobile,
                 email,
-                connectorEmail: email,
                 executionPartnerName: cpName,
                 authorizedSignatoryName: authSignName,
                 scheduleFirmName: cpName,
@@ -725,6 +722,7 @@ class ChannelPartnerService {
                         return;
                     }
                     field.setText(value == null ? "" : String(value));
+                    field.enableReadOnly(); // Prevent user from editing filled fields
                 } catch (err) {
                     console.warn(`Could not set field ${fieldName}: ${err.message}`);
                 }
