@@ -3,8 +3,7 @@ import FormData from 'form-data';
 
 class SurepassService {
     constructor() {
-        // this.apiToken = process.env.SUREPASS_API_TOKEN || "";
-        this.apiToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4OTEyNTgxOCwianRpIjoiMzgwMTE1YmItMDMxMi00ZDVhLTkyZDItNzk5OGRmY2U5MDcyIiwidHlwZSI6ImFjY2VzcyIsImlkZW50aXR5IjoiZGV2LmxvYW5zYWhheWFrQHN1cmVwYXNzLmlvIiwibmJmIjoxNzg5MTI1ODE4LCJleHAiOjE3OTE3MTc4MTgsImVtYWlsIjoibG9hbnNhaGF5YWtAc3VyZXBhc3MuaW8iLCJ0ZW5hbnRfaWQiOiJtYWluIiwidXNlcl9jbGFpbXMiOnsic2NvcGVzIjpbInVzZXIiXX19.cFgUhSQGhc1CQE21aMRrvjLYYbSYpulfi0TxMmoJ6X4";
+        this.apiToken = process.env.SUREPASS_API_TOKEN || "";
         this.baseUrl = process.env.SUREPASS_BASE_URL || "https://sandbox.surepass.app";
     }
 

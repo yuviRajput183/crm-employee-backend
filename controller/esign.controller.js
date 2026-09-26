@@ -1,5 +1,6 @@
 import esignService from '../services/esign.service.js';
 import EsignRequest from '../models/EsignRequest.model.js';
+import mongoose from 'mongoose';
 import axios from 'axios';
 
 export const startEsign = async (req, res) => {
@@ -156,25 +157,43 @@ export const getPendingAdminEsigns = async (req, res) => {
         
         const userSignedRequests = await EsignRequest.find({
             documentType: "CHANNEL_PARTNER_AGREEMENT",
-            status: "SIGNED"
-        }).populate('channelPartnerId').sort({ createdAt: -1 });
+            status: { $in: ["SIGNED", "SIGNED_PENDING_DOWNLOAD"] }
+        }).sort({ createdAt: -1 });
+
+        // Include partners that have the signed document directly in their docStates
+        const ChannelPartner = mongoose.model('ChannelPartner');
+        const partnersWithSignedDoc = await ChannelPartner.find({
+            "docStates.signedAgreementUrl": { $exists: true, $ne: null, $ne: "" }
+        });
 
         const adminEsignRequests = await EsignRequest.find({
             documentType: "ADMIN_CHANNEL_PARTNER_AGREEMENT"
         });
 
-        // Filter: user has signed, but admin has NOT signed
-        const pendingForAdmin = userSignedRequests.filter(userReq => {
-            const adminReqs = adminEsignRequests.filter(ar => ar.channelPartnerId.toString() === userReq.channelPartnerId._id.toString());
-            const hasAdminSigned = adminReqs.some(ar => ar.status === "SIGNED" || ar.status === "SIGNED_PENDING_DOWNLOAD");
-            return !hasAdminSigned && userReq.channelPartnerId != null;
+        const userSignedCpIds = new Set([
+            ...userSignedRequests.map(req => req.channelPartnerId.toString()),
+            ...partnersWithSignedDoc.map(p => p._id.toString())
+        ]);
+
+        // Filter: We want all where user has signed, and we indicate if admin has signed
+        const allRelevantPartners = await ChannelPartner.find({
+            _id: { $in: Array.from(userSignedCpIds) }
         });
 
-        // Map to just return the CP data with the user's esign request attached
-        const result = pendingForAdmin.map(req => ({
-            ...req.channelPartnerId._doc,
-            userEsignRequest: req
-        }));
+        // Map to return CP data with the user's esign request and admin sign status
+        const result = allRelevantPartners.map(cp => {
+            const cpId = cp._id.toString();
+            const req = userSignedRequests.find(r => r.channelPartnerId.toString() === cpId);
+            
+            const adminReqs = adminEsignRequests.filter(ar => ar.channelPartnerId.toString() === cpId);
+            const hasAdminSigned = adminReqs.some(ar => ar.status === "SIGNED" || ar.status === "SIGNED_PENDING_DOWNLOAD") || (cp.docStates && cp.docStates.adminSignedAgreementUrl);
+
+            return {
+                ...cp._doc,
+                userEsignRequest: req || { signedAt: cp.docStates?.agreementSigningAt || cp.updatedAt },
+                adminEsignStatus: hasAdminSigned ? "APPROVED" : "PENDING"
+            };
+        });
 
         res.status(200).json({
             success: true,
