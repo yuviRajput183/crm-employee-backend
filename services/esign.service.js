@@ -86,8 +86,8 @@ const ESIGN_POSITION = {
     ],
     "14": [
         {
-            "x": 329,
-            "y": 230
+            "x": 430,
+            "y": 219
         }
     ],
     "15": [
@@ -154,7 +154,7 @@ class EsignService {
         }
 
         // Validate customer data
-        const fullName = cp.panDetails?.fullName || cp.aadhaarDetails?.fullName;
+        const fullName = cp.aadhaarDetails?.fullName || cp.panDetails?.fullName;
         if (!fullName || !cp.mobile) {
             throw new Error("Customer information (Name, Mobile No) required for Aadhaar eSign is missing");
         }
@@ -275,7 +275,7 @@ class EsignService {
 
         // We assume admin's name is Admin for now, or fetch from employee profile if needed
         // For Surepass, Aadhaar e-sign matches the name partially, but we will pass generic or user's name
-        const fullName = "Authorized Signatory"; 
+        const fullName = "Parul Gandhi";
         
         // Use a generic admin mobile or keep it same to let them sign
         // Usually Surepass asks for Aadhaar and sends OTP to Aadhaar linked number.

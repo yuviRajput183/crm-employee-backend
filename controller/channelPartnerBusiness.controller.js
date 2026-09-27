@@ -122,22 +122,16 @@ export const verifyUdyam = async (req, res, next) => {
                 
                 let localUrl;
                 try {
-                    const urlObj = new URL(result.data.certificateUrl);
-                    if (urlObj.pathname.endsWith('.html')) {
-                        const targetDir = path.join(process.cwd(), 'uploads', 'ChannelPartnerDocuments', dirName);
-                        if (!fs.existsSync(targetDir)) {
-                            fs.mkdirSync(targetDir, { recursive: true });
-                        }
-                        const outputPath = path.join(targetDir, 'udyamCert.pdf');
-                        await convertHtmlToPdf(result.data.certificateUrl, outputPath);
-                        localUrl = `/uploads/ChannelPartnerDocuments/${dirName}/udyamCert.pdf`;
-                    } else {
-                        let ext = '.pdf';
-                        if (urlObj.pathname.endsWith('.jpg') || urlObj.pathname.endsWith('.jpeg')) ext = '.jpg';
-                        localUrl = await downloadAndSaveDocument(result.data.certificateUrl, dirName, `udyamCert${ext}`);
-                    }
+                    let ext = '.pdf';
+                    try {
+                        const urlObj = new URL(result.data.certificateUrl);
+                        if (urlObj.pathname.endsWith('.html')) ext = '.html';
+                        else if (urlObj.pathname.endsWith('.jpg') || urlObj.pathname.endsWith('.jpeg')) ext = '.jpg';
+                    } catch(e) {}
+                    localUrl = await downloadAndSaveDocument(result.data.certificateUrl, dirName, `udyamCert${ext}`);
                 } catch(e) {
-                    localUrl = await downloadAndSaveDocument(result.data.certificateUrl, dirName, 'udyamCert.pdf');
+                    console.error("Error in downloadAndSaveDocument:", e);
+                    throw e;
                 }
                 
                 cp.businessDetails.udyam.certificateDocument = {

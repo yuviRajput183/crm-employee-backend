@@ -38,7 +38,7 @@ export const getEligibleReferrers = async (req, res, next) => {
 export const getReferralInfo = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const cp = await ChannelPartner.findById(id).select("_id code referredByLevel1Id processedDealPercentage reportedDealPercentage processedBalanceReferralDealPercentage reportedBalanceReferralDealPercentage");
+        const cp = await ChannelPartner.findById(id).select("_id code referredByLevel1Id processedDealPercentage reportedDealPercentage processedBalanceReferralDealPercentage reportedBalanceReferralDealPercentage businessDetails panDetails aadhaarDetails");
         if (!cp) return next(ErrorResponse.notFound("Channel Partner not found"));
 
         let level1 = null;

@@ -13,7 +13,7 @@ class ChannelPartnerService {
 
     async getChannelPartner(req, res, next) {
         const { channelPartnerId } = req.params;
-        const cp = await ChannelPartner.findById(channelPartnerId);
+        const cp = await ChannelPartner.findById(channelPartnerId).populate('generatedBy', 'name').populate('approvedBy', 'name');
         if (!cp) {
             return next(ErrorResponse.notFound("Channel Partner not found."));
         }
@@ -78,13 +78,16 @@ class ChannelPartnerService {
             }
         }
 
-        // Check if PAN is already used by another CP (either as primary or auth PAN)
-        const existingPanUser = await ChannelPartner.findOne({ 
-            $or: [ { pan: pan }, { authPan: pan } ],
-            _id: { $ne: cp._id } 
-        });
-        if (existingPanUser) {
-            return next(ErrorResponse.conflict("This PAN is already associated with another Channel Partner."));
+        // Check if PAN is already used by another CP's primary PAN
+        // We only check main PAN for duplicates, as an authorized signatory can be associated with multiple Channel Partners.
+        if (!isAuthPan) {
+            const existingPanUser = await ChannelPartner.findOne({ 
+                pan: pan,
+                _id: { $ne: cp._id } 
+            });
+            if (existingPanUser) {
+                return next(ErrorResponse.conflict("This PAN is already associated with another Channel Partner."));
+            }
         }
 
         // Call Surepass API
