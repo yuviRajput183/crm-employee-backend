@@ -38,7 +38,7 @@ export const getEligibleReferrers = async (req, res, next) => {
 export const getReferralInfo = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const cp = await ChannelPartner.findById(id).select("_id code referredByLevel1Id dealPercentage");
+        const cp = await ChannelPartner.findById(id).select("_id code referredByLevel1Id processedDealPercentage reportedDealPercentage");
         if (!cp) return next(ErrorResponse.notFound("Channel Partner not found"));
 
         let level1 = null;
@@ -68,11 +68,13 @@ export const getReferralInfo = async (req, res, next) => {
                 channelPartner: {
                     _id: cp._id,
                     code: cp.code,
-                    dealPercentage: cp.dealPercentage
+                    processedDealPercentage: cp.processedDealPercentage,
+                    reportedDealPercentage: cp.reportedDealPercentage
                 },
                 level1: level1 ? { _id: level1._id, code: level1.code, name: getName(level1) } : null,
                 level2: level2 ? { _id: level2._id, code: level2.code, name: getName(level2) } : null,
-                referralDealPercentage: cp.dealPercentage
+                referralDealPercentageProcessed: cp.processedDealPercentage,
+                referralDealPercentageReported: cp.reportedDealPercentage
             }
         });
     } catch (error) {
@@ -85,18 +87,18 @@ export const generateCode = async (req, res, next) => {
     session.startTransaction();
 
     try {
-        const { channelPartnerId, referredByLevel1Id, dealType, dealPercentage } = req.body;
+        const { channelPartnerId, referredByLevel1Id, processedDealType, processedDealPercentage, reportedDealType, reportedDealPercentage } = req.body;
         const generatedById = req.user.referenceId; // Extracted from token by authenticate middleware
 
-        if (!channelPartnerId || !dealType || dealPercentage === undefined) {
+        if (!channelPartnerId || !processedDealType || processedDealPercentage === undefined || !reportedDealType || reportedDealPercentage === undefined) {
             throw ErrorResponse.badRequest("Missing required fields");
         }
 
-        if (dealType !== "Fixed" && dealType !== "Variable") {
+        if ((processedDealType !== "Fixed" && processedDealType !== "Variable") || (reportedDealType !== "Fixed" && reportedDealType !== "Variable")) {
             throw ErrorResponse.badRequest("Invalid deal type");
         }
 
-        if (dealPercentage < 0) {
+        if (processedDealPercentage < 0 || reportedDealPercentage < 0) {
             throw ErrorResponse.badRequest("Deal percentage must be >= 0");
         }
 
@@ -105,8 +107,10 @@ export const generateCode = async (req, res, next) => {
         if (cp.code) throw ErrorResponse.badRequest("Code already generated for this Channel Partner");
 
         let level2Id = null;
-        let referralDealPercentage = 0;
-        let balanceReferralDealPercentage = 0;
+        let processedReferralDealPercentage = 0;
+        let processedBalanceReferralDealPercentage = 0;
+        let reportedReferralDealPercentage = 0;
+        let reportedBalanceReferralDealPercentage = 0;
 
         if (referredByLevel1Id) {
             if (String(referredByLevel1Id) === String(channelPartnerId)) {
@@ -118,16 +122,27 @@ export const generateCode = async (req, res, next) => {
                 throw ErrorResponse.badRequest("Selected referral channel partner is not eligible");
             }
 
-            referralDealPercentage = ref1.dealPercentage || 0;
+            processedReferralDealPercentage = ref1.processedDealPercentage || 0;
+            reportedReferralDealPercentage = ref1.reportedDealPercentage || 0;
 
-            if (dealType === "Fixed" || dealType === "Variable") {
-                if (dealPercentage > referralDealPercentage) {
-                    throw ErrorResponse.badRequest("Channel partner deal cannot be greater than the referral deal");
+            if (processedDealType === "Fixed" || processedDealType === "Variable") {
+                if (processedDealPercentage > processedReferralDealPercentage) {
+                    throw ErrorResponse.badRequest("Processed channel partner deal cannot be greater than the referral deal");
                 }
             }
             
-            if (dealType === "Fixed") {
-                balanceReferralDealPercentage = referralDealPercentage - dealPercentage;
+            if (processedDealType === "Fixed") {
+                processedBalanceReferralDealPercentage = processedReferralDealPercentage - processedDealPercentage;
+            }
+
+            if (reportedDealType === "Fixed" || reportedDealType === "Variable") {
+                if (reportedDealPercentage > reportedReferralDealPercentage) {
+                    throw ErrorResponse.badRequest("Reported channel partner deal cannot be greater than the referral deal");
+                }
+            }
+            
+            if (reportedDealType === "Fixed") {
+                reportedBalanceReferralDealPercentage = reportedReferralDealPercentage - reportedDealPercentage;
             }
 
             // Derive Level 2 securely from DB
@@ -156,10 +171,17 @@ export const generateCode = async (req, res, next) => {
         cp.code = newCode;
         cp.referredByLevel1Id = referredByLevel1Id || null;
         cp.referredByLevel2Id = level2Id;
-        cp.dealType = dealType;
-        cp.dealPercentage = dealPercentage;
-        cp.referralDealPercentage = referralDealPercentage;
-        cp.balanceReferralDealPercentage = balanceReferralDealPercentage;
+        
+        cp.processedDealType = processedDealType;
+        cp.processedDealPercentage = processedDealPercentage;
+        cp.processedReferralDealPercentage = processedReferralDealPercentage;
+        cp.processedBalanceReferralDealPercentage = processedBalanceReferralDealPercentage;
+        
+        cp.reportedDealType = reportedDealType;
+        cp.reportedDealPercentage = reportedDealPercentage;
+        cp.reportedReferralDealPercentage = reportedReferralDealPercentage;
+        cp.reportedBalanceReferralDealPercentage = reportedBalanceReferralDealPercentage;
+        
         cp.generatedBy = generatedById;
         cp.generatedAt = new Date();
         cp.status = status;
