@@ -171,13 +171,16 @@ class SurepassService {
                 prefill_options: {
                     full_name: fullName,
                     mobile_number: mobileNumber,
-                    user_email: email || ""
+                    // user_email: email || "",
+                    user_email: "noreply.loansahayak@gmail.com"
                 }
             };
             
-            if (redirectUrl) {
-                payload.config.redirect_url = redirectUrl;
-            }
+            // if (redirectUrl) {
+            //     payload.redirect_url = redirectUrl;
+            // } else {
+                payload.redirect_url = 'https://app.loansahayak.in/';
+            // }
 
             const response = await axios.post(
                 `${this.baseUrl}/api/v1/esign/initialize`,

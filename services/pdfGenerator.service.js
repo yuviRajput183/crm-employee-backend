@@ -203,49 +203,38 @@ export class PdfGeneratorService {
         y -= 10;
 
         // Section 4
-        if (cp.businessDetails?.udyam?.verificationStatus === "VERIFIED" || cp.businessDetails?.gst?.verificationStatus === "VERIFIED" || cp.businessDetails?.registrationType) {
-            drawSectionHeader("4. BUSINESS VERIFICATION DETAILS");
-            
-            if (cp.businessDetails?.registrationType) {
-                drawRow("Registration Type", cp.businessDetails.registrationType);
-            }
+        drawSectionHeader("4. BUSINESS VERIFICATION DETAILS");
+        
+        drawRow("Registration Type", cp.businessDetails?.registrationType || '');
 
-            if (cp.businessDetails?.udyam?.verificationStatus === "VERIFIED") {
-                if (cp.businessDetails.udyam.udyamNumber) {
-                    drawRow("Udyam Number", cp.businessDetails.udyam.udyamNumber);
-                }
-                drawRow("Type of Enterprise", cp.businessDetails.udyam.enterpriseType || '');
-                drawRow("Major Activity", cp.businessDetails.udyam.majorActivity || '');
-                drawRow("Type of Organisation", cp.businessDetails.udyam.organisationType || '');
-                drawRow("Enterprise Name", cp.businessDetails.udyam.enterpriseName || '');
-                drawRow("Owner Name", cp.businessDetails.udyam.ownerName || '');
-                drawRow("Date of Incorporation", cp.businessDetails.udyam.dateOfIncorporation || '');
-                drawRow("Official Address", cp.businessDetails.udyam.officialAddress || '');
-                drawRow("Registration Date", cp.businessDetails.udyam.registrationDate || '');
-                drawRow("Last Updated Date", cp.businessDetails.udyam.lastUpdatedDate || '');
-                
-                if (cp.businessDetails.udyam.selectedUnit) {
-                    let unitStr = cp.businessDetails.udyam.selectedUnit;
-                    if (typeof unitStr === 'object') {
-                        // try to format if it's an object
-                        const u = unitStr;
-                        unitStr = [u.unit_name || u.unitName, u.flat, u.building, u.village_town || u.villageTown, u.block, u.road, u.city, u.district, u.state, u.pin].filter(Boolean).join(', ');
-                    }
-                    drawRow("Selected Unit", unitStr);
-                }
-            }
-            if (cp.businessDetails?.gst?.verificationStatus === "VERIFIED") {
-                drawRow("GSTIN", cp.businessDetails.gst.selectedGstin || '');
-                drawRow("Legal Name", cp.businessDetails.gst.legalName || '');
-                drawRow("Business Name", cp.businessDetails.gst.businessName || '');
-                drawRow("Constitution of Business", cp.businessDetails.gst.constitutionOfBusiness || '');
-                drawRow("Date of Registration", cp.businessDetails.gst.dateOfRegistration || '');
-                drawRow("Taxpayer Type", cp.businessDetails.gst.taxpayerType || '');
-                drawRow("GST Status", cp.businessDetails.gst.gstinStatus || '');
-                drawRow("GST Address", cp.businessDetails.gst.address || '');
-            }
-            y -= 10;
+        drawRow("Udyam Number", cp.businessDetails?.udyam?.udyamNumber || '');
+        drawRow("Type of Enterprise", cp.businessDetails?.udyam?.enterpriseType || '');
+        drawRow("Major Activity", cp.businessDetails?.udyam?.majorActivity || '');
+        drawRow("Type of Organisation", cp.businessDetails?.udyam?.organisationType || '');
+        drawRow("Enterprise Name", cp.businessDetails?.udyam?.enterpriseName || '');
+        drawRow("Owner Name", cp.businessDetails?.udyam?.ownerName || '');
+        drawRow("Date of Incorporation", cp.businessDetails?.udyam?.dateOfIncorporation || '');
+        drawRow("Official Address", cp.businessDetails?.udyam?.officialAddress || '');
+        drawRow("Registration Date", cp.businessDetails?.udyam?.registrationDate || '');
+        drawRow("Last Updated Date", cp.businessDetails?.udyam?.lastUpdatedDate || '');
+        
+        let unitStr = cp.businessDetails?.udyam?.selectedUnit || '';
+        if (typeof unitStr === 'object') {
+            const u = unitStr;
+            unitStr = [u.unit_name || u.unitName, u.flat, u.building, u.village_town || u.villageTown, u.block, u.road, u.city, u.district, u.state, u.pin].filter(Boolean).join(', ');
         }
+        drawRow("Selected Unit", unitStr);
+
+        drawRow("GSTIN", cp.businessDetails?.gst?.selectedGstin || '');
+        drawRow("Legal Name", cp.businessDetails?.gst?.legalName || '');
+        drawRow("Business Name", cp.businessDetails?.gst?.businessName || '');
+        drawRow("Constitution of Business", cp.businessDetails?.gst?.constitutionOfBusiness || '');
+        drawRow("Date of Registration", cp.businessDetails?.gst?.dateOfRegistration || '');
+        drawRow("Taxpayer Type", cp.businessDetails?.gst?.taxpayerType || '');
+        drawRow("GST Status", cp.businessDetails?.gst?.gstinStatus || '');
+        drawRow("GST Address", cp.businessDetails?.gst?.address || '');
+
+        y -= 10;
 
         // Section 5
         if (cp.bankDetails) {
@@ -265,8 +254,19 @@ export class PdfGeneratorService {
         drawSectionHeader("6. DECLARATIONS & CONFIRMATIONS");
         
         const applicantName = cp.aadhaarDetails?.fullName || cp.panDetails?.fullName || '';
-        const capacity = cp.businessDetails?.capacity || 'Director/Authorized Signatory';
-        const enterpriseName = cp.businessDetails?.udyam?.enterpriseName || cp.businessDetails?.gst?.legalName || '';
+        const enterpriseName = cp.businessDetails?.udyam?.enterpriseName || cp.businessDetails?.gst?.legalName || cp.businessDetails?.gst?.businessName || '';
+        const firmString = enterpriseName ? ` of ${enterpriseName}` : '';
+        
+        const getCapacityText = () => {
+            switch(cp.businessDetails?.registrationType) {
+                case "Individual/Sole Prop": return "Self/Proprietor";
+                case "HUF": return "Karta/Authorized Signatory";
+                case "Partnership/LLP": return "Partner/Authorized Signatory";
+                case "Company": return "Director/Authorized Signatory";
+                default: return "Authorized Signatory";
+            }
+        };
+        const capacityStr = getCapacityText();
 
         if (cp.aadhaarConfirmed) {
             drawRow("Aadhaar Details", "I confirm that all the details shown above are correct and agree to use the same for the onboarding process.");
@@ -275,20 +275,22 @@ export class PdfGeneratorService {
         if (cp.businessDetails?.udyam && cp.businessDetails.udyam.declarationAccepted) {
             if (cp.businessDetails.udyam.declarationType === 'REGISTERED') {
                 const udyamNumber = cp.businessDetails.udyam.udyamNumber || '';
-                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacity} of ${enterpriseName} confirms that I/We are registered as Micro or Small or Medium Enterprise under the Micro, Small and Medium Enterprises Development Act, 2006 via registration number ${udyamNumber}. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
+                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacityStr}${firmString} confirms that I/We are registered as Micro or Small or Medium Enterprise under the Micro, Small and Medium Enterprises Development Act, 2006 via registration number ${udyamNumber}. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
                 drawRow("Udyam Declaration", text);
             } else {
-                drawRow("Udyam Declaration", "Not Registered - Declaration Accepted");
+                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacityStr}${firmString} confirms that I/We are not registered as Micro or Small or Medium Enterprise under the Micro, Small and Medium Enterprises Development Act, 2006. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
+                drawRow("Udyam Declaration", text);
             }
         }
         
         if (cp.businessDetails?.gst && cp.businessDetails.gst.declarationAccepted) {
             if (cp.businessDetails.gst.declarationType === 'REGISTERED') {
                 const gstin = cp.businessDetails.gst.selectedGstin || '';
-                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacity} of ${enterpriseName} confirms that I/We are registered under Good and Services Tax, 2017 via registration number ${gstin}. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
+                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacityStr}${firmString} confirms that I/We are registered under Good and Services Tax, 2017 via registration number ${gstin}. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
                 drawRow("GST Declaration", text);
             } else {
-                drawRow("GST Declaration", "Not Registered - Declaration Accepted");
+                const text = `I, ${applicantName}, the applicant, in the capacity of ${capacityStr}${firmString} confirms that I/We are not registered under Good and Services Tax, 2017. In case of any change in the registration status it will be my/our responsibility to inform you of the same immediately.`;
+                drawRow("GST Declaration", text);
             }
         }
         

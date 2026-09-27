@@ -686,12 +686,16 @@ class ChannelPartnerService {
             // Address logic
             const udyamAddr = cp.businessDetails?.udyam?.officialAddress;
             const gstAddr = cp.businessDetails?.gst?.address;
-            const bankAddr = cp.bankDetails?.addressDetails ? 
-                `${cp.bankDetails.addressDetails.addressLine1 || ''} ${cp.bankDetails.addressDetails.addressLine2 || ''}`.trim() : '';
+            
+            // The selected address from the bank verification step is saved as a string in cp.bankDetails.addressDetails
+            const selectedAddress = typeof cp.bankDetails?.addressDetails === 'string' 
+                ? cp.bankDetails.addressDetails 
+                : (cp.bankDetails?.addressDetails ? `${cp.bankDetails.addressDetails.addressLine1 || ''} ${cp.bankDetails.addressDetails.addressLine2 || ''}`.trim() : '');
+                
             const aadhaarAddr = cp.aadhaarDetails?.fullAddress;
             
-            const businessAddress = udyamAddr || gstAddr || aadhaarAddr || bankAddr || '';
-            const commAddress = aadhaarAddr || bankAddr || businessAddress || '';
+            const businessAddress = udyamAddr || gstAddr || aadhaarAddr || selectedAddress || '';
+            const commAddress = selectedAddress || aadhaarAddr || businessAddress || '';
             
             const mobile = cp.mobile || '';
             const email = cp.email || '';
@@ -821,17 +825,25 @@ class ChannelPartnerService {
             return next(ErrorResponse.notFound("Channel Partner not found."));
         }
 
-        if (!cp.agreement || !cp.agreement.filePath) {
+        let filePath;
+        let fileName;
+
+        if (cp.documents && cp.documents.adminSignedAgreementUrl) {
+            filePath = path.join(process.cwd(), cp.documents.adminSignedAgreementUrl);
+            fileName = `fully-signed-agreement-${channelPartnerId}.pdf`;
+        } else if (cp.agreement && cp.agreement.filePath) {
+            filePath = cp.agreement.filePath;
+            fileName = cp.agreement.fileName;
+        } else {
             return next(ErrorResponse.notFound("Agreement not generated yet."));
         }
 
-        const filePath = cp.agreement.filePath;
         if (!fs.existsSync(filePath)) {
             return next(ErrorResponse.notFound("Agreement file not found on server."));
         }
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${cp.agreement.fileName}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
         
         const fileStream = fs.createReadStream(filePath);
         fileStream.pipe(res);
