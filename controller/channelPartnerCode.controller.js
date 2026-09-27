@@ -38,18 +38,18 @@ export const getEligibleReferrers = async (req, res, next) => {
 export const getReferralInfo = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const cp = await ChannelPartner.findById(id).select("_id code referredByLevel1Id processedDealPercentage reportedDealPercentage");
+        const cp = await ChannelPartner.findById(id).select("_id code referredByLevel1Id processedDealPercentage reportedDealPercentage processedBalanceReferralDealPercentage reportedBalanceReferralDealPercentage");
         if (!cp) return next(ErrorResponse.notFound("Channel Partner not found"));
 
         let level1 = null;
         let level2 = null;
 
         if (cp.referredByLevel1Id) {
-            level1 = await ChannelPartner.findById(cp.referredByLevel1Id).select("_id code businessDetails panDetails aadhaarDetails");
+            level1 = await ChannelPartner.findById(cp.referredByLevel1Id).select("_id code businessDetails panDetails aadhaarDetails processedDealPercentage reportedDealPercentage processedBalanceReferralDealPercentage reportedBalanceReferralDealPercentage referredByLevel1Id");
             
             // Derive Level 2
             if (level1 && level1.referredByLevel1Id) {
-                level2 = await ChannelPartner.findById(level1.referredByLevel1Id).select("_id code businessDetails panDetails aadhaarDetails");
+                level2 = await ChannelPartner.findById(level1.referredByLevel1Id).select("_id code businessDetails panDetails aadhaarDetails processedDealPercentage reportedDealPercentage");
             }
         }
 
@@ -68,11 +68,24 @@ export const getReferralInfo = async (req, res, next) => {
                 channelPartner: {
                     _id: cp._id,
                     code: cp.code,
+                    name: getName(cp),
                     processedDealPercentage: cp.processedDealPercentage,
-                    reportedDealPercentage: cp.reportedDealPercentage
+                    reportedDealPercentage: cp.reportedDealPercentage,
+                    processedBalanceDealPercentage: cp.processedBalanceReferralDealPercentage,
+                    reportedBalanceDealPercentage: cp.reportedBalanceReferralDealPercentage
                 },
-                level1: level1 ? { _id: level1._id, code: level1.code, name: getName(level1) } : null,
-                level2: level2 ? { _id: level2._id, code: level2.code, name: getName(level2) } : null,
+                level1: level1 ? { 
+                    _id: level1._id, 
+                    code: level1.code, 
+                    name: getName(level1),
+                    processedBalanceDealPercentage: level1.processedBalanceReferralDealPercentage,
+                    reportedBalanceDealPercentage: level1.reportedBalanceReferralDealPercentage
+                } : null,
+                level2: level2 ? { 
+                    _id: level2._id, 
+                    code: level2.code, 
+                    name: getName(level2)
+                } : null,
                 referralDealPercentageProcessed: cp.processedDealPercentage,
                 referralDealPercentageReported: cp.reportedDealPercentage
             }

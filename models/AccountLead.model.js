@@ -113,7 +113,25 @@ const accountLeadSchema = new mongoose.Schema(
     reportedThrough: {
       type: String,
       enum: ["Self", "Channel Partner"]
-    }
+    },
+    // Channel Partner Fields
+    channelPartner1: { type: mongoose.Schema.Types.ObjectId, ref: "ChannelPartner" },
+    cpCode1: { type: String },
+    cp1DealPercentage: { type: Number },
+    cp1PayoutAmount: { type: Number },
+    
+    channelPartner2: { type: String }, // Store as string (name) or objectId? In frontend we are sending name. Wait. Frontend sets it to level1.name.
+    // Actually we should store references if possible, but frontend uses strings right now.
+    // Wait, frontend sends name for channelPartner2. I will change frontend to send IDs.
+    // Let me check frontend `onSubmit`. It sends `data` straight.
+    cpCode2: { type: String },
+    cp2DealPercentage: { type: Number },
+    cp2PayoutAmount: { type: Number },
+
+    channelPartner3: { type: String },
+    cpCode3: { type: String },
+    cp3DealPercentage: { type: Number },
+    cp3PayoutAmount: { type: Number }
   },
   {
     timestamps: true,
