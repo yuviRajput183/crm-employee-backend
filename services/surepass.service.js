@@ -262,6 +262,105 @@ class SurepassService {
             throw new Error('Failed to retrieve signed document from Surepass');
         }
     }
+    async generateTransUnionReport(data) {
+        if (!this.apiToken) throw new Error('Surepass API token is not configured');
+        try {
+            console.log(`[Surepass] Calling TransUnion API: ${this.baseUrl}/api/v1/credit-report-cibil/fetch-report-pdf`);
+            console.log(`[Surepass] Payload:`, JSON.stringify(data));
+            
+            const response = await axios.post(
+                `${this.baseUrl}/api/v1/credit-report-cibil/fetch-report-pdf`,
+                data,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log(`[Surepass] TransUnion API Response:`, JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('[Surepass] TransUnion Error:', error.response?.data || error.message);
+            throw new Error('Failed to generate TransUnion report with Surepass');
+        }
+    }
+
+    async generateEquifaxReport(data) {
+        if (!this.apiToken) throw new Error('Surepass API token is not configured');
+        try {
+            console.log(`[Surepass] Calling Equifax API: ${this.baseUrl}/api/v1/credit-report-v2/fetch-pdf-report`);
+            console.log(`[Surepass] Payload:`, JSON.stringify(data));
+
+            const response = await axios.post(
+                `${this.baseUrl}/api/v1/credit-report-v2/fetch-pdf-report`,
+                data,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log(`[Surepass] Equifax API Response:`, JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('[Surepass] Equifax Error:', error.response?.data || error.message);
+            throw new Error('Failed to generate Equifax report with Surepass');
+        }
+    }
+
+    async generateExperianReport(data) {
+        if (!this.apiToken) throw new Error('Surepass API token is not configured');
+        try {
+            console.log(`[Surepass] Calling Experian API: ${this.baseUrl}/api/v1/credit-report-experian/fetch-report-pdf`);
+            console.log(`[Surepass] Payload:`, JSON.stringify(data));
+
+            const response = await axios.post(
+                `${this.baseUrl}/api/v1/credit-report-experian/fetch-report-pdf`,
+                data,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log(`[Surepass] Experian API Response:`, JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('[Surepass] Experian Error:', error.response?.data || error.message);
+            throw new Error('Failed to generate Experian report with Surepass');
+        }
+    }
+
+    async generateCrifReport(data) {
+        if (!this.apiToken) throw new Error('Surepass API token is not configured');
+        try {
+            console.log(`[Surepass] Calling CRIF API: ${this.baseUrl}/api/v1/credit-report-crif/fetch-report-pdf`);
+            console.log(`[Surepass] Payload:`, JSON.stringify(data));
+
+            const response = await axios.post(
+                `${this.baseUrl}/api/v1/credit-report-crif/fetch-report-pdf`,
+                data,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.apiToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log(`[Surepass] CRIF API Response:`, JSON.stringify(response.data));
+            return response.data;
+        } catch (error) {
+            console.error('[Surepass] CRIF Error:', error.response?.data || error.message);
+            throw new Error('Failed to generate CRIF report with Surepass');
+        }
+    }
 }
 
 export default new SurepassService();
