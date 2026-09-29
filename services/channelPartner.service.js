@@ -552,6 +552,16 @@ class ChannelPartnerService {
         // Merge with existing docStates if they exist (in case of re-upload after rejection)
         const docStates = cp.documents?.docStates ? { ...cp.documents.docStates } : {};
         
+        // Also ensure Udyam Certificate URL is populated if it was retrieved in Business Verification
+        if (cp.businessDetails?.udyam?.certificateDocument?.url && (!docStates['udyamCert'] || !docStates['udyamCert'].url)) {
+            docStates['udyamCert'] = {
+                ...(docStates['udyamCert'] || {}),
+                status: 'UPLOADED',
+                remark: '',
+                url: cp.businessDetails.udyam.certificateDocument.url
+            };
+        }
+        
         const isFinalSubmit = req.body.isFinalSubmit === 'true';
 
         // Update URL for just the uploaded files
