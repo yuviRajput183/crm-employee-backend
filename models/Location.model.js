@@ -48,6 +48,10 @@ const locationSchema = new mongoose.Schema(
       type: String,
       description: "Account holder name of the advisor",
     },
+    bankName: {
+      type: String,
+      description: "Bank name of the location",
+    },
     accountNumber: {
       type: String,
       description: "Account number of the advisor",

@@ -32,6 +32,7 @@ import channelPartnerCodeRoutes from "./routes/channelPartnerCode.route.js";
 import esignRoutes from "./routes/esign.routes.js";
 import udyamRoutes from "./routes/udyam.route.js";
 import cibilReportRoutes from "./routes/cibilReport.route.js";
+import accountInvoiceRoutes from "./routes/accountInvoice.routes.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -76,6 +77,7 @@ app.use('/api/v1/channel-partner-codes', channelPartnerCodeRoutes);
 app.use('/api/v1/esign', esignRoutes);
 app.use('/api/v1/udyam', udyamRoutes);
 app.use('/api/v1/cibil-reports', cibilReportRoutes);
+app.use('/api/v1/account-invoices', accountInvoiceRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

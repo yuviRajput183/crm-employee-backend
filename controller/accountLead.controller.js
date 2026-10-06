@@ -19,21 +19,58 @@ export const createAccountLead = async (req, res, next) => {
   try {
     const { 
         reportedLoanAmount, 
-        reportedPayoutPercentage, 
+        reportedPayoutPercentage,
+        caseType,
+        channelPartner1,
+        cp1DealPercentage,
+        cp2DealPercentage,
+        cp3DealPercentage
     } = req.body;
 
     const totalPayoutAmount = (reportedLoanAmount * reportedPayoutPercentage) / 100;
     const leadNo = await helperService.getNextSequence("accountLeadSerial");
     
-    const accountLeadData = {
+    let leadData = {
         ...req.body,
         totalPayoutAmount,
         leadNo,
         status: "In Progress",
-        createdBy: req.user ? req.user._id : undefined
+        createdBy: req.user ? (req.user.id || req.user._id) : undefined
     };
 
-    const accountLead = await AccountLead.create(accountLeadData);
+    const ChannelPartner = (await import("../models/ChannelPartner.model.js")).default;
+    const DealApprovalRequest = (await import("../models/DealApprovalRequest.model.js")).default;
+    
+    // Process CP1
+    let originalCp1DealPercentage = cp1DealPercentage;
+    if (channelPartner1) {
+        const cp = await ChannelPartner.findById(channelPartner1);
+        if (cp) {
+            originalCp1DealPercentage = caseType === "Processed" ? cp.processedDealPercentage : cp.reportedDealPercentage;
+            
+            leadData.cp1DealPercentage = originalCp1DealPercentage;
+            leadData.cp1PayoutAmount = (totalPayoutAmount * originalCp1DealPercentage) / 100;
+        }
+    }
+
+    // Since we don't have direct ObjectIds for cp2 and cp3 in the model reliably, and no specific instruction was given to fetch them from DB,
+    // wait, if we are to check MASTER for cp2 and cp3 too, we'd need their IDs. The instructions say "Use ChannelPartner.model.js to fetch channelPartner1." So maybe only fetch CP1?
+    // Let's assume we do this just for CP1, or if we have to do for all, wait. The prompt says: "Use ChannelPartner.model.js to fetch channelPartner1. Use its processedDealPercentage or reportedDealPercentage (based on caseType). Do this for createAccountLead."
+
+    const accountLead = await AccountLead.create(leadData);
+
+    if (channelPartner1 && cp1DealPercentage !== undefined && Number(cp1DealPercentage) !== Number(originalCp1DealPercentage)) {
+        await DealApprovalRequest.create({
+            leadId: accountLead._id,
+            cpLevel: 1,
+            channelPartnerId: channelPartner1,
+            originalDealPercentage: originalCp1DealPercentage,
+            requestedDealPercentage: Number(cp1DealPercentage),
+            requestedBy: req.user ? (req.user.id || req.user._id) : undefined,
+            status: "PENDING_ADMIN"
+        });
+    }
+
     return SuccessResponse.created(res, "Account Lead created successfully", accountLead);
   } catch (error) {
     return next(ErrorResponse.internalServer(error.message));
@@ -49,7 +86,8 @@ export const getInProgressLeads = async (req, res, next) => {
         "PART_CASE_FOUND", 
         "CASE_FOUND",
         "Ready to report",
-        "Invoiced"
+        "Invoiced",
+        "Invoice Raised"
     ];
 
     const leads = await AccountLead.find({ status: { $in: allowedStatuses } })
@@ -121,11 +159,55 @@ export const updateAccountLead = async (req, res, next) => {
     }
 
     let updateData = { ...req.body };
-    updateData.updatedBy = req.user ? req.user._id : undefined;
+    updateData.updatedBy = req.user ? (req.user.id || req.user._id) : undefined;
 
     // Recalculate totalPayoutAmount if fields are provided
+    let totalPayoutAmount = existingLead.totalPayoutAmount;
     if (updateData.reportedLoanAmount && updateData.reportedPayoutPercentage) {
-        updateData.totalPayoutAmount = (updateData.reportedLoanAmount * updateData.reportedPayoutPercentage) / 100;
+        totalPayoutAmount = (updateData.reportedLoanAmount * updateData.reportedPayoutPercentage) / 100;
+        updateData.totalPayoutAmount = totalPayoutAmount;
+    } else if (updateData.reportedLoanAmount) {
+        totalPayoutAmount = (updateData.reportedLoanAmount * existingLead.reportedPayoutPercentage) / 100;
+        updateData.totalPayoutAmount = totalPayoutAmount;
+    } else if (updateData.reportedPayoutPercentage) {
+        totalPayoutAmount = (existingLead.reportedLoanAmount * updateData.reportedPayoutPercentage) / 100;
+        updateData.totalPayoutAmount = totalPayoutAmount;
+    }
+
+    const { cp1DealPercentage, channelPartner1, caseType } = updateData;
+    const finalChannelPartner1 = channelPartner1 || existingLead.channelPartner1;
+    const finalCaseType = caseType || existingLead.caseType;
+
+    const ChannelPartner = (await import("../models/ChannelPartner.model.js")).default;
+    const DealApprovalRequest = (await import("../models/DealApprovalRequest.model.js")).default;
+
+    if (finalChannelPartner1 && cp1DealPercentage !== undefined) {
+        const cp = await ChannelPartner.findById(finalChannelPartner1);
+        if (cp) {
+            const masterCp1DealPercentage = finalCaseType === "Processed" ? cp.processedDealPercentage : cp.reportedDealPercentage;
+            
+            if (Number(cp1DealPercentage) !== Number(masterCp1DealPercentage)) {
+                // Request created, use master value for now
+                updateData.cp1DealPercentage = masterCp1DealPercentage;
+                updateData.cp1PayoutAmount = (totalPayoutAmount * masterCp1DealPercentage) / 100;
+
+                await DealApprovalRequest.create({
+                    leadId: id,
+                    cpLevel: 1,
+                    channelPartnerId: finalChannelPartner1,
+                    originalDealPercentage: masterCp1DealPercentage,
+                    requestedDealPercentage: Number(cp1DealPercentage),
+                    requestedBy: req.user ? (req.user.id || req.user._id) : undefined,
+                    status: "PENDING_ADMIN"
+                });
+            } else {
+                updateData.cp1DealPercentage = masterCp1DealPercentage;
+                updateData.cp1PayoutAmount = (totalPayoutAmount * masterCp1DealPercentage) / 100;
+            }
+        }
+    } else if (updateData.totalPayoutAmount !== undefined && existingLead.cp1DealPercentage !== undefined) {
+        // If total payout changed but no CP change in body, update CP payout amount anyway
+        updateData.cp1PayoutAmount = (totalPayoutAmount * existingLead.cp1DealPercentage) / 100;
     }
 
     const updatedLead = await AccountLead.findByIdAndUpdate(id, updateData, { new: true });

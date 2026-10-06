@@ -14,6 +14,7 @@ class LocationService {
                 authorizedSignatoryName,
                 authorizedSignatoryDesignation,
                 accountHolderName,
+                bankName,
                 accountNumber,
                 ifscCode,
             } = req.body;
@@ -41,6 +42,7 @@ class LocationService {
                 authorizedSignatoryDesignation,
                 stampAndSign,
                 accountHolderName,
+                bankName,
                 accountNumber,
                 ifscCode,
             });
@@ -98,6 +100,7 @@ class LocationService {
                 authorizedSignatoryName,
                 authorizedSignatoryDesignation,
                 accountHolderName,
+                bankName,
                 accountNumber,
                 ifscCode,
             } = req.body;
@@ -131,6 +134,7 @@ class LocationService {
             location.authorizedSignatoryDesignation = authorizedSignatoryDesignation !== undefined ? authorizedSignatoryDesignation : location.authorizedSignatoryDesignation;
             location.stampAndSign = stampAndSign;
             location.accountHolderName = accountHolderName !== undefined ? accountHolderName : location.accountHolderName;
+            location.bankName = bankName !== undefined ? bankName : location.bankName;
             location.accountNumber = accountNumber !== undefined ? accountNumber : location.accountNumber;
             location.ifscCode = ifscCode !== undefined ? ifscCode : location.ifscCode;
 
