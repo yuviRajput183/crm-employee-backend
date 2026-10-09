@@ -172,10 +172,13 @@ export const generateInvoiceHtml = (data) => {
             <p>Signature</p>
         </div>
         <div class="signature-block">
-            <p>Juhi</p>
-            <p>Director</p>
+            <p>${data.authorizedSignatoryName || 'Juhi'}</p>
+            <p>${data.authorizedSignatoryDesignation || 'Director'}</p>
             <p class="brand-color" style="font-size: 11px; font-weight: bold; margin-top: 10px;">For Urbanedge Loan Sahayak Private Limited</p>
-            <p class="brand-color" style="font-family: 'Brush Script MT', cursive; font-size: 28px; margin: 5px 0;">Juhi</p>
+            ${data.stampAndSignBase64 ? 
+                `<img src="${data.stampAndSignBase64}" alt="Signature" style="max-width: 150px; max-height: 80px; margin: 5px 0;" />` : 
+                `<p class="brand-color" style="font-family: 'Brush Script MT', cursive; font-size: 28px; margin: 5px 0;">${data.authorizedSignatoryName || 'Juhi'}</p>`
+            }
             <p class="brand-color" style="font-weight: bold; font-size: 11px;">Auth. Sign.</p>
         </div>
     </div>

@@ -201,6 +201,25 @@ class AccountInvoiceService {
         );
 
         const location = leads[0].location || {};
+        console.log("Invoice Location Data:", location);
+        
+        let stampAndSignBase64 = null;
+        if (location.stampAndSign) {
+            const stampPath = path.join(process.cwd(), 'uploads', 'stamps', location.stampAndSign);
+            console.log("Checking stampPath:", stampPath);
+            if (fs.existsSync(stampPath)) {
+                console.log("Stamp file exists! Converting to base64...");
+                const ext = path.extname(stampPath).toLowerCase().replace('.', '');
+                const mime = ext === 'png' ? 'image/png' : (ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png');
+                const fileData = fs.readFileSync(stampPath);
+                stampAndSignBase64 = `data:${mime};base64,${fileData.toString('base64')}`;
+            } else {
+                console.log("Stamp file DOES NOT exist on disk:", stampPath);
+            }
+        } else {
+            console.log("location.stampAndSign is missing or null on the Location object.");
+        }
+
         const templateData = {
             invoiceNumber,
             invoiceDate: invoiceDateFormatted,
@@ -223,7 +242,10 @@ class AccountInvoiceService {
             totalInvoiceValueInWords,
             bankName: location.bankName, 
             accountNo: location.accountNumber || '',
-            ifscCode: location.ifscCode || ''
+            ifscCode: location.ifscCode || '',
+            stampAndSignBase64,
+            authorizedSignatoryName: location.authorizedSignatoryName || 'Juhi',
+            authorizedSignatoryDesignation: location.authorizedSignatoryDesignation || 'Director'
         };
 
         const html = generateInvoiceHtml(templateData);

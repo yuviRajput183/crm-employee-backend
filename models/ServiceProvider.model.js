@@ -45,6 +45,11 @@ const serviceProviderSchema = new mongoose.Schema(
             ref: "Location",
             required: [true, "Location is required"],
         },
+        dealPercentage: {
+            type: Number,
+            default: 0,
+            description: "The deal percentage for this service provider",
+        },
     },
     {
         timestamps: true,

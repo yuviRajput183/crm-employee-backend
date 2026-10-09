@@ -3,6 +3,8 @@ import Bank from "../models/Bank.model.js";
 import Banker from "../models/Banker.model.js";
 import City from "../models/City.model.js";
 import Employee from "../models/Employee.model.js";
+import Product from "../models/Product.model.js";
+import mongoose from "mongoose";
 
 class BankerService {
   /**
@@ -93,7 +95,7 @@ class BankerService {
    */
   async listBankers(req, res, next) {
     const userId = req.user.referenceId;
-    const { stateName, city } = req.query;
+    const { stateName, city, product, bank } = req.query;
 
     const currentUser = await Employee.findById(userId);
     if (!currentUser) {
@@ -108,6 +110,23 @@ class BankerService {
     
     if (city) {
       query.city = city;
+    }
+    
+    if (product) {
+      if (mongoose.Types.ObjectId.isValid(product)) {
+        const productObj = await Product.findById(product);
+        if (productObj) {
+          query.product = { $regex: `^${productObj.name.trim()}$`, $options: "i" };
+        } else {
+          query.product = { $regex: `^${product.trim()}$`, $options: "i" };
+        }
+      } else {
+        query.product = { $regex: `^${product.trim()}$`, $options: "i" };
+      }
+    }
+    
+    if (bank) {
+      query.bank = bank;
     }
 
     const bankers = await Banker.find(query)

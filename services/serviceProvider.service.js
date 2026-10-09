@@ -14,6 +14,7 @@ class ServiceProviderService {
                 gstin,
                 code,
                 location,
+                dealPercentage
             } = req.body;
             
             let billingFormat = req.body.billingFormat;
@@ -32,6 +33,7 @@ class ServiceProviderService {
                 code,
                 billingFormat,
                 location,
+                dealPercentage: dealPercentage ? Number(dealPercentage) : 0,
             });
 
             await newServiceProvider.save();

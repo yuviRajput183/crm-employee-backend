@@ -220,7 +220,8 @@ class LeadStagesService {
     const lead = await AccountLead.findById(leadId)
       .populate("bankerCaseLocationDetailsId")
       .populate("confirmationStageId")
-      .populate("spInvoiceStageId");
+      .populate("spInvoiceStageId")
+      .populate("serviceProvider");
 
     if (!lead) {
       throw new Error("Lead not found");
