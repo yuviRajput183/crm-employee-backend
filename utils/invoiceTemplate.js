@@ -5,8 +5,9 @@ export const generateInvoiceHtml = (data) => {
 <head>
     <meta charset="UTF-8">
     <title>Tax Invoice</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; font-size: 13px; margin: 0; padding: 15px; }
+        body { font-family: 'Roboto', Arial, sans-serif; font-size: 13px; margin: 0; padding: 15px; }
         .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
