@@ -19,27 +19,21 @@ export const saveBankerDetails = async (req, res, next) => {
   }
 };
 
-export const saveConfirmationDetails = async (req, res, next) => {
-  const requiredFields = ["confirmationReceived"];
-  const missingFields = helperService.validateFields(requiredFields, req.body);
-
-  if (missingFields.length > 0) {
-    return next(ErrorResponse.badRequest(`Missing fields: ${missingFields.join(", ")}`));
-  }
-
-  if (req.body.confirmationReceived === "Yes") {
-    if (!req.files || !req.files.pdf || !req.files.eml) {
-      return next(ErrorResponse.badRequest("Both PDF and EML files are mandatory to upload."));
+  export const saveConfirmationDetails = async (req, res, next) => {
+    const requiredFields = ["confirmationReceived"];
+    const missingFields = helperService.validateFields(requiredFields, req.body);
+  
+    if (missingFields.length > 0) {
+      return next(ErrorResponse.badRequest(`Missing fields: ${missingFields.join(", ")}`));
     }
-  }
-
-  try {
-    const data = await LeadStagesService.saveConfirmationDetails(req);
-    return SuccessResponse.ok(res, data.message, data.data);
-  } catch (error) {
-    return next(ErrorResponse.internalServer(error.message));
-  }
-};
+  
+    try {
+      const data = await LeadStagesService.saveConfirmationDetails(req);
+      return SuccessResponse.ok(res, data.message, data.data);
+    } catch (error) {
+      return next(ErrorResponse.internalServer(error.message));
+    }
+  };
 
 export const getLeadStageDetails = async (req, res, next) => {
   try {

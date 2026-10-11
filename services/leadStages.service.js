@@ -39,8 +39,12 @@ class LeadStagesService {
     const { confirmationReceived, reason } = req.body;
     const userId = req.user.id;
 
-    let pdfPath = "";
-    let emlPath = "";
+    const lead = await AccountLead.findById(leadId).populate("confirmationStageId");
+    if (!lead) throw new Error("Lead not found");
+
+    let pdfPath = lead?.confirmationStageId?.pdf || "";
+    let emlPath = lead?.confirmationStageId?.eml || "";
+    
     if (req.files) {
       if (req.files.pdf && req.files.pdf.length > 0) {
         pdfPath = req.files.pdf[0].path;
@@ -50,15 +54,29 @@ class LeadStagesService {
       }
     }
 
-    const details = new ConfirmationStage({
-      leadId,
-      confirmationReceived,
-      pdf: pdfPath,
-      eml: emlPath,
-      reason,
-      createdBy: userId,
-    });
-    const savedDetails = await details.save();
+    if (confirmationReceived === "Yes" && !pdfPath && !emlPath) {
+        throw new Error("Both PDF and EML files are mandatory to upload.");
+    }
+
+    let savedDetails;
+    if (lead.confirmationStageId) {
+      lead.confirmationStageId.confirmationReceived = confirmationReceived;
+      lead.confirmationStageId.pdf = pdfPath;
+      lead.confirmationStageId.eml = emlPath;
+      lead.confirmationStageId.reason = reason;
+      lead.confirmationStageId.updatedBy = userId;
+      savedDetails = await lead.confirmationStageId.save();
+    } else {
+      const details = new ConfirmationStage({
+        leadId,
+        confirmationReceived,
+        pdf: pdfPath,
+        eml: emlPath,
+        reason,
+        createdBy: userId,
+      });
+      savedDetails = await details.save();
+    }
 
     const newStatus = confirmationReceived === "Yes" ? "Confirmation Received" : "In Progress"; // Or whatever logic you have
 
@@ -84,6 +102,7 @@ class LeadStagesService {
 
     const updates = {
       reportedThrough,
+      reportedPayoutPercentageSame,
       status: "Ready to report",
       stageNumber: 5 // advance to next stage
     };

@@ -114,6 +114,10 @@ const accountLeadSchema = new mongoose.Schema(
       type: String,
       enum: ["Self", "Channel Partner"]
     },
+    reportedPayoutPercentageSame: {
+      type: String,
+      enum: ["Yes", "No"]
+    },
     // Channel Partner Fields
     channelPartner1: { type: mongoose.Schema.Types.ObjectId, ref: "ChannelPartner" },
     cpCode1: { type: String },
