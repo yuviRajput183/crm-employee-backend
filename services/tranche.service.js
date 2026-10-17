@@ -86,7 +86,7 @@ class TrancheService {
     lead.status = newTotalFound === totalCaseAmount ? "CASE_FOUND" : "PART_CASE_FOUND";
 
     if (lead.stageNumber === 3 && newTotalFound === totalCaseAmount) {
-        lead.stageNumber = 4;
+        lead.stageNumber = 3;
     }
 
     await lead.save();

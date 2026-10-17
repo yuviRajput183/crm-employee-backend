@@ -41,6 +41,12 @@ const accountLeadSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    originalReportedPayoutPercentage: {
+      type: Number,
+    },
+    originalTotalPayoutAmount: {
+      type: Number,
+    },
     caseType: {
       type: String,
       enum: ["Processed", "Reported"],
@@ -73,8 +79,15 @@ const accountLeadSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["In Progress", "Banker Confirmed", "Confirmation Received", "PART_CASE_FOUND", "CASE_FOUND", "Ready to report", "Invoice Raised", "Closed", "Invoiced", "Recovery Required"],
+      enum: ["In Progress", "Banker Confirmed", "Confirmation Received", "PART_CASE_FOUND", "CASE_FOUND", "Ready to report", "Invoice Raised", "Closed", "Invoiced", "Recovery Required", "Reported"],
       default: "In Progress",
+    },
+    bundleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ReportedBundle",
+    },
+    reportedAt: {
+      type: Date,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

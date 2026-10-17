@@ -33,6 +33,7 @@ import esignRoutes from "./routes/esign.routes.js";
 import udyamRoutes from "./routes/udyam.route.js";
 import cibilReportRoutes from "./routes/cibilReport.route.js";
 import accountInvoiceRoutes from "./routes/accountInvoice.routes.js";
+import reportedBundleRoutes from "./routes/reportedBundle.routes.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -78,6 +79,7 @@ app.use('/api/v1/esign', esignRoutes);
 app.use('/api/v1/udyam', udyamRoutes);
 app.use('/api/v1/cibil-reports', cibilReportRoutes);
 app.use('/api/v1/account-invoices', accountInvoiceRoutes);
+app.use('/api/v1/reported-bundles', reportedBundleRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");

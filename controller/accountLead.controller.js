@@ -33,6 +33,8 @@ export const createAccountLead = async (req, res, next) => {
     let leadData = {
         ...req.body,
         totalPayoutAmount,
+        originalReportedPayoutPercentage: Number(reportedPayoutPercentage),
+        originalTotalPayoutAmount: totalPayoutAmount,
         leadNo,
         status: "In Progress",
         createdBy: req.user ? (req.user.id || req.user._id) : undefined
@@ -90,17 +92,47 @@ export const getInProgressLeads = async (req, res, next) => {
         "Invoice Raised"
     ];
 
-    const leads = await AccountLead.find({ status: { $in: allowedStatuses } })
+    const Tranche = (await import("../models/Tranche.model.js")).default;
+
+    // Find any unbundled tranches (bundleId is null or does not exist)
+    const unbundledTranches = await Tranche.find({
+      $or: [
+        { bundleId: { $exists: false } },
+        { bundleId: null }
+      ]
+    }).lean();
+
+    const leadIdsWithUnbundledTranches = unbundledTranches.map(t => t.leadId);
+
+    const leads = await AccountLead.find({ 
+      $or: [
+        {
+          status: { $in: allowedStatuses },
+          $or: [
+            { bundleId: { $exists: false } },
+            { bundleId: null }
+          ]
+        },
+        {
+          _id: { $in: leadIdsWithUnbundledTranches }
+        }
+      ]
+    })
       .populate("location", "name")
       .populate("product", "name")
       .populate("bank", "name bankName")
-      .populate("serviceProvider", "legalName code")
+      .populate("serviceProvider", "legalName code dealPercentage")
+      .sort({ createdAt: -1 })
       .lean();
 
-    const Tranche = (await import("../models/Tranche.model.js")).default;
-
     for (let i = 0; i < leads.length; i++) {
-        const tranches = await Tranche.find({ leadId: leads[i]._id }).lean();
+        const tranches = await Tranche.find({ 
+          leadId: leads[i]._id,
+          $or: [
+            { bundleId: { $exists: false } },
+            { bundleId: null }
+          ]
+        }).lean();
         leads[i].tranches = tranches || [];
     }
       

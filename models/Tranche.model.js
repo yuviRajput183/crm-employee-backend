@@ -6,10 +6,16 @@ const trancheSchema = new mongoose.Schema({
     ref: "LeadAccount",
     required: true
   },
-  // trancheNumber: {
-  //   type: Number,
-  //   required: true
-  // },
+  trancheNumber: {
+    type: mongoose.Schema.Types.Mixed,
+  },
+  customTrancheId: {
+    type: String,
+  },
+  bundleId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ReportedBundle",
+  },
   amount: {
     type: Number,
     required: true

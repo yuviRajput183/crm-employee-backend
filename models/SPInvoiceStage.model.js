@@ -34,6 +34,16 @@ const spInvoiceStageSchema = new mongoose.Schema(
     roundOffDifference: {
       type: Boolean,
     },
+    remainingAmountWillCome: {
+      type: Boolean,
+    },
+    remainingTrancheAmount: {
+      type: Number,
+    },
+    remainingTrancheId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tranche",
+    },
     advisorPayoutPaid: {
       type: Boolean,
     },
