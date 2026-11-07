@@ -55,3 +55,52 @@ export const resetPassword = async (req, res, next) => {
         return next(ErrorResponse.internalServer(errorHandler.message));
       }
 }
+
+/**
+ * sendWhatsappLoginOtp - Generates and sends a WhatsApp OTP for passwordless login.
+ * @param {body(mobile)} req - Expects req.body.mobile.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const sendWhatsappLoginOtp = async (req, res, next) => {
+  try {
+    const data = await AuthService.sendWhatsappLoginOtp(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * verifyWhatsappLoginOtp - Verifies a WhatsApp OTP and authenticates the user.
+ * Returns the same response structure as the normal login endpoint.
+ * @param {body(mobile, otp)} req - Expects req.body.mobile and req.body.otp.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const verifyWhatsappLoginOtp = async (req, res, next) => {
+  try {
+    const data = await AuthService.verifyWhatsappLoginOtp(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};
+
+/**
+ * resendWhatsappLoginOtp - Resends a WhatsApp login OTP with cooldown enforcement.
+ * @param {body(mobile)} req - Expects req.body.mobile.
+ * @param {Object} res - The HTTP response object.
+ * @param {Function} next - The next middleware function for error handling.
+ */
+export const resendWhatsappLoginOtp = async (req, res, next) => {
+  try {
+    const data = await AuthService.resendWhatsappLoginOtp(req, res, next);
+    if (data && data.data)
+      return SuccessResponse.ok(res, data.message, data.data);
+  } catch (error) {
+    return next(ErrorResponse.internalServer(error.message));
+  }
+};

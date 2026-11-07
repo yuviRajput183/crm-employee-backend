@@ -2,10 +2,15 @@ import mongoose from "mongoose";
 
 const OtpSchema = new mongoose.Schema(
     {
+        // For channel partner OTPs — optional for login OTPs
         channelPartnerId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "ChannelPartner",
-            required: true,
+        },
+        // For login OTPs — references the User record
+        loginUserId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
         },
         channel: {
             type: String,
@@ -14,7 +19,7 @@ const OtpSchema = new mongoose.Schema(
         },
         purpose: {
             type: String,
-            enum: ["channel_partner_mobile", "channel_partner_email"],
+            enum: ["channel_partner_mobile", "channel_partner_email", "whatsapp_login"],
             required: true,
         },
         target: {
